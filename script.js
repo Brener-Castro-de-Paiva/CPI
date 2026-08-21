@@ -77,13 +77,18 @@ const googleProvider =
 ========================================================= */
 
 const CONFIG = {
-  inicio: '2026-08-20T00:00:00',
-  fim: '2026-11-18T23:59:59'
+
+  inicio:
+    '2026-08-20T00:00:00',
+
+  fim:
+    '2026-11-18T23:59:59'
+
 };
 
 
 /* =========================================================
-   FIRESTORE
+   REFERÊNCIAS FIRESTORE
 ========================================================= */
 
 const atividadesRef =
@@ -91,6 +96,14 @@ const atividadesRef =
     db,
     'atividades'
   );
+
+
+const logsAcessoRef =
+  collection(
+    db,
+    'logsAcesso'
+  );
+
 
 const progressoRef =
   doc(
@@ -101,14 +114,23 @@ const progressoRef =
 
 
 /* =========================================================
-   CONTROLE
+   CONTROLE INTERNO
 ========================================================= */
 
-let painelIniciado = false;
+let painelIniciado =
+  false;
 
-let unsubscribeAtividades = null;
+let usuarioEhAdmin =
+  false;
 
-let usuarioEhAdmin = false;
+let unsubscribeAtividades =
+  null;
+
+let intervaloPrazo =
+  null;
+
+let acessoRegistradoNestaSessao =
+  false;
 
 
 /* =========================================================
@@ -116,7 +138,11 @@ let usuarioEhAdmin = false;
 ========================================================= */
 
 function $(seletor) {
-  return document.querySelector(seletor);
+
+  return document.querySelector(
+    seletor
+  );
+
 }
 
 
@@ -125,6 +151,7 @@ function limitar(
   minimo,
   maximo
 ) {
+
   return Math.min(
     Math.max(
       valor,
@@ -132,13 +159,16 @@ function limitar(
     ),
     maximo
   );
+
 }
 
 
 function formatarData(data) {
+
   return new Intl.DateTimeFormat(
     'pt-BR'
   ).format(data);
+
 }
 
 
@@ -148,12 +178,17 @@ function formatarDataISO(dataISO) {
     return '';
   }
 
+
   const partes =
     dataISO.split('-');
 
+
   if (partes.length !== 3) {
+
     return dataISO;
+
   }
+
 
   return (
     partes[2] +
@@ -162,11 +197,12 @@ function formatarDataISO(dataISO) {
     '/' +
     partes[0]
   );
+
 }
 
 
 /* =========================================================
-   CRIAR ELEMENTO SEGURO
+   CRIAÇÃO SEGURA DE TEXTO
 ========================================================= */
 
 function criarElementoTexto(
@@ -178,55 +214,150 @@ function criarElementoTexto(
   const elemento =
     document.createElement(tag);
 
+
   if (classe) {
+
     elemento.className =
       classe;
+
   }
+
 
   elemento.textContent =
     texto || '';
 
+
   return elemento;
+
 }
 
 
 /* =========================================================
-   VERIFICAR ADMINISTRADOR
+   VERIFICAÇÃO DO ADMINISTRADOR
 ========================================================= */
 
-function verificarAdministrador(usuario) {
+function verificarAdministrador(
+  usuario
+) {
 
   if (!usuario) {
-    usuarioEhAdmin = false;
+
+    usuarioEhAdmin =
+      false;
+
     return false;
+
   }
 
+
   const email =
-    (usuario.email || '')
-      .toLowerCase();
+    (
+      usuario.email ||
+      ''
+    ).toLowerCase();
+
 
   usuarioEhAdmin =
     email ===
     EMAIL_ADMIN.toLowerCase();
 
+
   return usuarioEhAdmin;
+
 }
 
 
 /* =========================================================
-   AJUSTAR INTERFACE CONFORME PERFIL
+   REGISTRAR LOG DE ACESSO
+========================================================= */
+
+async function registrarAcesso(
+  usuario
+) {
+
+  if (!usuario) {
+    return;
+  }
+
+
+  /*
+    Evita criar vários logs durante
+    a mesma sessão somente porque
+    onAuthStateChanged disparou novamente.
+  */
+
+  if (acessoRegistradoNestaSessao) {
+    return;
+  }
+
+
+  try {
+
+    await addDoc(
+      logsAcessoRef,
+      {
+
+        tipo:
+          'entrada',
+
+        uid:
+          usuario.uid || '',
+
+        nome:
+          usuario.displayName || '',
+
+        email:
+          usuario.email || '',
+
+        dataHora:
+          serverTimestamp(),
+
+        pagina:
+          'Controle cronológico da CPI'
+
+      }
+    );
+
+
+    acessoRegistradoNestaSessao =
+      true;
+
+
+  } catch (erro) {
+
+    /*
+      O erro de auditoria não deve
+      impedir o usuário de acessar
+      o painel.
+    */
+
+    console.error(
+      'Erro ao registrar acesso:',
+      erro
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   INTERFACE DE ACORDO COM A PERMISSÃO
 ========================================================= */
 
 function aplicarPermissoesInterface() {
 
-  const botaoAdicionar =
+  const adicionar =
     $('#adicionarAtividade');
+
 
   const progressoManual =
     $('#progressoManual');
 
+
   const progressoNumero =
     $('#progressoNumero');
+
 
   const ajuda =
     document.querySelector(
@@ -234,9 +365,9 @@ function aplicarPermissoesInterface() {
     );
 
 
-  if (botaoAdicionar) {
+  if (adicionar) {
 
-    botaoAdicionar.hidden =
+    adicionar.hidden =
       !usuarioEhAdmin;
 
   }
@@ -265,7 +396,9 @@ function aplicarPermissoesInterface() {
       ajuda.textContent =
         'O percentual é salvo no Firebase e sincronizado entre os dispositivos.';
 
-    } else {
+    }
+
+    else {
 
       ajuda.textContent =
         'Modo de visualização. Somente o administrador pode alterar o progresso.';
@@ -278,7 +411,7 @@ function aplicarPermissoesInterface() {
 
 
 /* =========================================================
-   LOGIN
+   LOGIN COM GOOGLE
 ========================================================= */
 
 async function entrarComGoogle() {
@@ -290,12 +423,15 @@ async function entrarComGoogle() {
       googleProvider
     );
 
-  } catch (erro) {
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro no login:',
       erro
     );
+
 
     alert(
       'Não foi possível entrar com a conta Google.'
@@ -316,7 +452,9 @@ async function sairDaConta() {
 
     await signOut(auth);
 
-  } catch (erro) {
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro ao sair:',
@@ -329,7 +467,7 @@ async function sairDaConta() {
 
 
 /* =========================================================
-   AUTENTICAÇÃO
+   CONTROLE DE AUTENTICAÇÃO
 ========================================================= */
 
 onAuthStateChanged(
@@ -339,6 +477,7 @@ onAuthStateChanged(
     const telaLogin =
       $('#telaLogin');
 
+
     const conteudo =
       $('#conteudoProtegido');
 
@@ -346,6 +485,15 @@ onAuthStateChanged(
     if (usuario) {
 
       verificarAdministrador(
+        usuario
+      );
+
+
+      /*
+        Registra o acesso no Firestore.
+      */
+
+      await registrarAcesso(
         usuario
       );
 
@@ -379,6 +527,10 @@ onAuthStateChanged(
         false;
 
 
+      acessoRegistradoNestaSessao =
+        false;
+
+
       if (conteudo) {
 
         conteudo.hidden =
@@ -399,11 +551,33 @@ onAuthStateChanged(
         false;
 
 
+      /*
+        Para de escutar atividades
+        ao sair.
+      */
+
       if (unsubscribeAtividades) {
 
         unsubscribeAtividades();
 
         unsubscribeAtividades =
+          null;
+
+      }
+
+
+      /*
+        Cancela atualização automática
+        do prazo.
+      */
+
+      if (intervaloPrazo) {
+
+        clearInterval(
+          intervaloPrazo
+        );
+
+        intervaloPrazo =
           null;
 
       }
@@ -415,7 +589,7 @@ onAuthStateChanged(
 
 
 /* =========================================================
-   PRAZO TOTAL
+   PRAZO TOTAL DA CPI
 ========================================================= */
 
 function atualizarPrazo() {
@@ -425,10 +599,12 @@ function atualizarPrazo() {
       CONFIG.inicio
     );
 
+
   const fim =
     new Date(
       CONFIG.fim
     );
+
 
   const agora =
     new Date();
@@ -495,7 +671,9 @@ function atualizarPrazo() {
   if ($('#dataInicio')) {
 
     $('#dataInicio').textContent =
-      formatarData(inicio);
+      formatarData(
+        inicio
+      );
 
   }
 
@@ -503,7 +681,9 @@ function atualizarPrazo() {
   if ($('#dataAtual')) {
 
     $('#dataAtual').textContent =
-      formatarData(agora);
+      formatarData(
+        agora
+      );
 
   }
 
@@ -511,14 +691,17 @@ function atualizarPrazo() {
   if ($('#dataFim')) {
 
     $('#dataFim').textContent =
-      formatarData(fim);
+      formatarData(
+        fim
+      );
 
   }
 
 
   if ($('#percentualPrazo')) {
 
-    $('#percentualPrazo').textContent =
+    $('#percentualPrazo')
+      .textContent =
       percentual.toFixed(1) +
       '%';
 
@@ -527,7 +710,8 @@ function atualizarPrazo() {
 
   if ($('#barraPrazo')) {
 
-    $('#barraPrazo').style.width =
+    $('#barraPrazo')
+      .style.width =
       percentual + '%';
 
   }
@@ -535,7 +719,8 @@ function atualizarPrazo() {
 
   if ($('#diasDecorridos')) {
 
-    $('#diasDecorridos').textContent =
+    $('#diasDecorridos')
+      .textContent =
       diasDecorridos +
       (
         diasDecorridos === 1
@@ -548,7 +733,8 @@ function atualizarPrazo() {
 
   if ($('#diasRestantes')) {
 
-    $('#diasRestantes').textContent =
+    $('#diasRestantes')
+      .textContent =
       diasRestantes +
       (
         diasRestantes === 1
@@ -563,21 +749,24 @@ function atualizarPrazo() {
 
     if (agora < inicio) {
 
-      $('#statusPrazo').textContent =
+      $('#statusPrazo')
+        .textContent =
         'Ainda não iniciado';
 
     }
 
     else if (agora > fim) {
 
-      $('#statusPrazo').textContent =
+      $('#statusPrazo')
+        .textContent =
         'Prazo encerrado';
 
     }
 
     else {
 
-      $('#statusPrazo').textContent =
+      $('#statusPrazo')
+        .textContent =
         'Em andamento';
 
     }
@@ -588,10 +777,12 @@ function atualizarPrazo() {
 
 
 /* =========================================================
-   PROGRESSO
+   EXIBIR PROGRESSO
 ========================================================= */
 
-function mostrarProgresso(valor) {
+function mostrarProgresso(
+  valor
+) {
 
   const numero =
     limitar(
@@ -603,7 +794,8 @@ function mostrarProgresso(valor) {
 
   if ($('#progressoManual')) {
 
-    $('#progressoManual').value =
+    $('#progressoManual')
+      .value =
       numero;
 
   }
@@ -611,7 +803,8 @@ function mostrarProgresso(valor) {
 
   if ($('#progressoNumero')) {
 
-    $('#progressoNumero').value =
+    $('#progressoNumero')
+      .value =
       numero;
 
   }
@@ -619,7 +812,8 @@ function mostrarProgresso(valor) {
 
   if ($('#barraTrabalho')) {
 
-    $('#barraTrabalho').style.width =
+    $('#barraTrabalho')
+      .style.width =
       numero + '%';
 
   }
@@ -637,7 +831,7 @@ function mostrarProgresso(valor) {
 
 
 /* =========================================================
-   CARREGAR PROGRESSO
+   CARREGAR PROGRESSO DO FIRESTORE
 ========================================================= */
 
 async function carregarProgresso() {
@@ -650,20 +844,31 @@ async function carregarProgresso() {
       );
 
 
-    if (snapshot.exists()) {
+    if (
+      snapshot.exists()
+    ) {
+
+      const dados =
+        snapshot.data();
+
 
       mostrarProgresso(
-        snapshot.data()
-          .percentual || 0
+        dados.percentual || 0
       );
-
-    } else {
-
-      mostrarProgresso(0);
 
     }
 
-  } catch (erro) {
+    else {
+
+      mostrarProgresso(
+        0
+      );
+
+    }
+
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro ao carregar progresso:',
@@ -690,6 +895,7 @@ async function salvarProgresso(
     );
 
     return;
+
   }
 
 
@@ -712,7 +918,8 @@ async function salvarProgresso(
       progressoRef,
       {
 
-        percentual,
+        percentual:
+          percentual,
 
         atualizadoEm:
           serverTimestamp(),
@@ -728,7 +935,9 @@ async function salvarProgresso(
       }
     );
 
-  } catch (erro) {
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro ao salvar progresso:',
@@ -746,7 +955,7 @@ async function salvarProgresso(
 
 
 /* =========================================================
-   NOVA ATIVIDADE
+   ABRIR NOVA ATIVIDADE
 ========================================================= */
 
 function abrirFormularioAtividade() {
@@ -758,16 +967,27 @@ function abrirFormularioAtividade() {
     );
 
     return;
+
   }
 
 
-  if ($('#formNovaAtividade')) {
+  if (
+    $('#formNovaAtividade')
+  ) {
+
     return;
+
   }
 
 
-  if ($('#formEditarAtividade')) {
-    return;
+  const formularioEdicao =
+    $('#formEditarAtividade');
+
+
+  if (formularioEdicao) {
+
+    formularioEdicao.remove();
+
   }
 
 
@@ -776,7 +996,9 @@ function abrirFormularioAtividade() {
 
 
   if (!lista) {
+
     return;
+
   }
 
 
@@ -806,6 +1028,7 @@ function abrirFormularioAtividade() {
         id="cancelarNovaAtividade"
         type="button"
         class="btn-cancelar-atividade"
+        aria-label="Cancelar"
       >
         ×
       </button>
@@ -823,6 +1046,7 @@ function abrirFormularioAtividade() {
         id="novaAtividadeTitulo"
         type="text"
         maxlength="200"
+        placeholder="Ex.: Solicitação de documentos"
       >
 
     </div>
@@ -848,7 +1072,9 @@ function abrirFormularioAtividade() {
         Status
       </label>
 
-      <select id="novaAtividadeStatus">
+      <select
+        id="novaAtividadeStatus"
+      >
 
         <option value="Pendente">
           Pendente
@@ -877,6 +1103,7 @@ function abrirFormularioAtividade() {
         id="novaAtividadeDescricao"
         rows="4"
         maxlength="2000"
+        placeholder="Descreva a atividade ou providência..."
       ></textarea>
 
     </div>
@@ -899,8 +1126,21 @@ function abrirFormularioAtividade() {
   );
 
 
-  $('#cancelarNovaAtividade')
-    .addEventListener(
+  const cancelar =
+    $('#cancelarNovaAtividade');
+
+
+  const salvar =
+    $('#salvarNovaAtividade');
+
+
+  const titulo =
+    $('#novaAtividadeTitulo');
+
+
+  if (cancelar) {
+
+    cancelar.addEventListener(
       'click',
       function () {
 
@@ -909,51 +1149,84 @@ function abrirFormularioAtividade() {
       }
     );
 
+  }
 
-  $('#salvarNovaAtividade')
-    .addEventListener(
+
+  if (salvar) {
+
+    salvar.addEventListener(
       'click',
       salvarNovaAtividade
     );
 
+  }
 
-  $('#novaAtividadeTitulo')
-    .focus();
+
+  if (titulo) {
+
+    titulo.focus();
+
+  }
 
 }
 
 
 /* =========================================================
-   SALVAR ATIVIDADE
+   SALVAR NOVA ATIVIDADE
 ========================================================= */
 
 async function salvarNovaAtividade() {
 
   if (!usuarioEhAdmin) {
+
     return;
+
+  }
+
+
+  const tituloInput =
+    $('#novaAtividadeTitulo');
+
+
+  const dataInput =
+    $('#novaAtividadeData');
+
+
+  const statusInput =
+    $('#novaAtividadeStatus');
+
+
+  const descricaoInput =
+    $('#novaAtividadeDescricao');
+
+
+  if (
+    !tituloInput ||
+    !dataInput ||
+    !statusInput
+  ) {
+
+    return;
+
   }
 
 
   const titulo =
-    $('#novaAtividadeTitulo')
-      .value
-      .trim();
+    tituloInput.value.trim();
 
 
   const data =
-    $('#novaAtividadeData')
-      .value;
+    dataInput.value;
 
 
   const status =
-    $('#novaAtividadeStatus')
-      .value;
+    statusInput.value;
 
 
   const descricao =
-    $('#novaAtividadeDescricao')
-      .value
-      .trim();
+    descricaoInput
+      ? descricaoInput.value.trim()
+      : '';
 
 
   if (!titulo) {
@@ -961,6 +1234,9 @@ async function salvarNovaAtividade() {
     alert(
       'Informe a atividade.'
     );
+
+
+    tituloInput.focus();
 
     return;
 
@@ -973,7 +1249,26 @@ async function salvarNovaAtividade() {
       'Informe a data.'
     );
 
+
+    dataInput.focus();
+
     return;
+
+  }
+
+
+  const botao =
+    $('#salvarNovaAtividade');
+
+
+  if (botao) {
+
+    botao.disabled =
+      true;
+
+
+    botao.textContent =
+      'Salvando...';
 
   }
 
@@ -984,13 +1279,17 @@ async function salvarNovaAtividade() {
       atividadesRef,
       {
 
-        titulo,
+        titulo:
+          titulo,
 
-        data,
+        data:
+          data,
 
-        status,
+        status:
+          status,
 
-        descricao,
+        descricao:
+          descricao,
 
         criadaEm:
           serverTimestamp(),
@@ -1007,11 +1306,19 @@ async function salvarNovaAtividade() {
     );
 
 
-    $('#formNovaAtividade')
-      .remove();
+    const formulario =
+      $('#formNovaAtividade');
 
 
-  } catch (erro) {
+    if (formulario) {
+
+      formulario.remove();
+
+    }
+
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro ao salvar atividade:',
@@ -1022,6 +1329,18 @@ async function salvarNovaAtividade() {
     alert(
       'Não foi possível salvar a atividade.'
     );
+
+
+    if (botao) {
+
+      botao.disabled =
+        false;
+
+
+      botao.textContent =
+        'Salvar atividade';
+
+    }
 
   }
 
@@ -1044,11 +1363,7 @@ function abrirEdicao(
     );
 
     return;
-  }
 
-
-  if ($('#formEditarAtividade')) {
-    return;
   }
 
 
@@ -1057,12 +1372,32 @@ function abrirEdicao(
 
 
   if (formularioNova) {
+
     formularioNova.remove();
+
+  }
+
+
+  const formularioExistente =
+    $('#formEditarAtividade');
+
+
+  if (formularioExistente) {
+
+    formularioExistente.remove();
+
   }
 
 
   const lista =
     $('#listaAtividades');
+
+
+  if (!lista) {
+
+    return;
+
+  }
 
 
   const formulario =
@@ -1100,13 +1435,14 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label>
+      <label for="editarTitulo">
         Atividade
       </label>
 
       <input
         id="editarTitulo"
         type="text"
+        maxlength="200"
       >
 
     </div>
@@ -1114,7 +1450,7 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label>
+      <label for="editarData">
         Data
       </label>
 
@@ -1128,7 +1464,7 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label>
+      <label for="editarStatus">
         Status
       </label>
 
@@ -1155,13 +1491,14 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label>
+      <label for="editarDescricao">
         Observação
       </label>
 
       <textarea
         id="editarDescricao"
         rows="4"
+        maxlength="2000"
       ></textarea>
 
     </div>
@@ -1223,6 +1560,15 @@ function abrirEdicao(
       }
     );
 
+
+  formulario.scrollIntoView({
+    behavior:
+      'smooth',
+
+    block:
+      'center'
+  });
+
 }
 
 
@@ -1235,39 +1581,91 @@ async function salvarEdicaoAtividade(
 ) {
 
   if (!usuarioEhAdmin) {
+
     return;
+
+  }
+
+
+  const tituloInput =
+    $('#editarTitulo');
+
+
+  const dataInput =
+    $('#editarData');
+
+
+  const statusInput =
+    $('#editarStatus');
+
+
+  const descricaoInput =
+    $('#editarDescricao');
+
+
+  if (
+    !tituloInput ||
+    !dataInput ||
+    !statusInput
+  ) {
+
+    return;
+
   }
 
 
   const titulo =
-    $('#editarTitulo')
-      .value
-      .trim();
+    tituloInput.value.trim();
 
 
   const data =
-    $('#editarData')
-      .value;
+    dataInput.value;
 
 
   const status =
-    $('#editarStatus')
-      .value;
+    statusInput.value;
 
 
   const descricao =
-    $('#editarDescricao')
-      .value
-      .trim();
+    descricaoInput
+      ? descricaoInput.value.trim()
+      : '';
 
 
-  if (!titulo || !data) {
+  if (!titulo) {
 
     alert(
-      'Informe título e data.'
+      'Informe a atividade.'
     );
 
     return;
+
+  }
+
+
+  if (!data) {
+
+    alert(
+      'Informe a data.'
+    );
+
+    return;
+
+  }
+
+
+  const botao =
+    $('#salvarEdicaoAtividade');
+
+
+  if (botao) {
+
+    botao.disabled =
+      true;
+
+
+    botao.textContent =
+      'Salvando...';
 
   }
 
@@ -1282,13 +1680,17 @@ async function salvarEdicaoAtividade(
       ),
       {
 
-        titulo,
+        titulo:
+          titulo,
 
-        data,
+        data:
+          data,
 
-        status,
+        status:
+          status,
 
-        descricao,
+        descricao:
+          descricao,
 
         atualizadaEm:
           serverTimestamp(),
@@ -1302,11 +1704,19 @@ async function salvarEdicaoAtividade(
     );
 
 
-    $('#formEditarAtividade')
-      .remove();
+    const formulario =
+      $('#formEditarAtividade');
 
 
-  } catch (erro) {
+    if (formulario) {
+
+      formulario.remove();
+
+    }
+
+  }
+
+  catch (erro) {
 
     console.error(
       'Erro ao editar atividade:',
@@ -1318,16 +1728,30 @@ async function salvarEdicaoAtividade(
       'Não foi possível salvar a alteração.'
     );
 
+
+    if (botao) {
+
+      botao.disabled =
+        false;
+
+
+      botao.textContent =
+        'Salvar alterações';
+
+    }
+
   }
 
 }
 
 
 /* =========================================================
-   EXCLUIR
+   EXCLUIR ATIVIDADE
 ========================================================= */
 
-async function excluirAtividade(id) {
+async function excluirAtividade(
+  id
+) {
 
   if (!usuarioEhAdmin) {
 
@@ -1336,6 +1760,7 @@ async function excluirAtividade(id) {
     );
 
     return;
+
   }
 
 
@@ -1346,7 +1771,9 @@ async function excluirAtividade(id) {
 
 
   if (!confirmar) {
+
     return;
+
   }
 
 
@@ -1360,10 +1787,12 @@ async function excluirAtividade(id) {
       )
     );
 
-  } catch (erro) {
+  }
+
+  catch (erro) {
 
     console.error(
-      'Erro ao excluir:',
+      'Erro ao excluir atividade:',
       erro
     );
 
@@ -1378,7 +1807,7 @@ async function excluirAtividade(id) {
 
 
 /* =========================================================
-   CARD ATIVIDADE
+   CRIAR CARD DE ATIVIDADE
 ========================================================= */
 
 function criarCardAtividade(
@@ -1450,10 +1879,13 @@ function criarCardAtividade(
 
   const classeStatus =
     (
-      atividade.status || ''
+      atividade.status ||
+      ''
     )
       .toLowerCase()
-      .normalize('NFD')
+      .normalize(
+        'NFD'
+      )
       .replace(
         /[\u0300-\u036f]/g,
         ''
@@ -1465,12 +1897,19 @@ function criarCardAtividade(
 
 
   status.classList.add(
-    'status-' + classeStatus
+    'status-' +
+    classeStatus
   );
 
 
-  meta.appendChild(data);
-  meta.appendChild(status);
+  meta.appendChild(
+    data
+  );
+
+
+  meta.appendChild(
+    status
+  );
 
 
   blocoDados.appendChild(
@@ -1489,8 +1928,8 @@ function criarCardAtividade(
 
 
   /*
-     AÇÕES APARECEM SOMENTE
-     PARA O ADMINISTRADOR
+    Somente o administrador
+    recebe botões de edição.
   */
 
   if (usuarioEhAdmin) {
@@ -1596,7 +2035,9 @@ function criarCardAtividade(
   );
 
 
-  if (atividade.descricao) {
+  if (
+    atividade.descricao
+  ) {
 
     const descricao =
       criarElementoTexto(
@@ -1633,7 +2074,9 @@ function escutarAtividades() {
 
 
   if (!lista) {
+
     return;
+
   }
 
 
@@ -1651,20 +2094,28 @@ function escutarAtividades() {
     onSnapshot(
       consulta,
 
-      function (snapshot) {
+      function (
+        snapshot
+      ) {
 
         lista.innerHTML =
           '';
 
 
         snapshot.forEach(
-          function (documento) {
+          function (
+            documento
+          ) {
 
-            lista.appendChild(
+            const card =
               criarCardAtividade(
                 documento.id,
                 documento.data()
-              )
+              );
+
+
+            lista.appendChild(
+              card
             );
 
           }
@@ -1680,11 +2131,18 @@ function escutarAtividades() {
 
       },
 
-      function (erro) {
+      function (
+        erro
+      ) {
 
         console.error(
           'Erro ao carregar atividades:',
           erro
+        );
+
+
+        alert(
+          'Não foi possível carregar as atividades.'
         );
 
       }
@@ -1694,7 +2152,7 @@ function escutarAtividades() {
 
 
 /* =========================================================
-   EVENTOS
+   EVENTOS DO PAINEL
 ========================================================= */
 
 function configurarEventosPainel() {
@@ -1786,7 +2244,9 @@ function configurarEventosPainel() {
 async function iniciarPainel() {
 
   if (painelIniciado) {
+
     return;
+
   }
 
 
@@ -1809,16 +2269,19 @@ async function iniciarPainel() {
   escutarAtividades();
 
 
-  setInterval(
-    atualizarPrazo,
-    60 * 60 * 1000
-  );
+  intervaloPrazo =
+    setInterval(
+      atualizarPrazo,
+      60 *
+      60 *
+      1000
+    );
 
 }
 
 
 /* =========================================================
-   LOGIN / LOGOUT
+   LOGIN E LOGOUT
 ========================================================= */
 
 const botaoEntrar =
