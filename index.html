@@ -26,382 +26,434 @@
 <body>
 
   <!-- =====================================================
-       CABEÇALHO
+       TELA DE LOGIN
   ====================================================== -->
 
-  <header class="topo">
+  <section id="telaLogin" class="tela-login">
 
-    <div class="container topo-conteudo">
+    <div class="login-card">
 
-      <div>
-
-        <span class="selo">
-          PÁGINA SIGILOSA
-        </span>
-
-        <h1>
-          Comissão Parlamentar de Inquérito
-        </h1>
-
-        <p class="subtitulo">
-          Controle cronológico dos trabalhos da CPI de Roseira
-        </p>
-
+      <div class="login-icone">
+        🔐
       </div>
 
+      <span class="selo">
+        ACESSO RESTRITO
+      </span>
 
-      <div
-        class="icone-sigilo"
-        aria-hidden="true"
+      <h1>
+        Comissão Parlamentar de Inquérito
+      </h1>
+
+      <p>
+        Controle cronológico dos trabalhos da CPI de Roseira.
+      </p>
+
+      <p>
+        Para acessar o painel, é necessário autenticar-se
+        com uma conta Google.
+      </p>
+
+      <button
+        id="entrarGoogle"
+        class="botao"
+        type="button"
       >
-        🔒
-      </div>
+        Entrar com Google
+      </button>
 
     </div>
 
-  </header>
+  </section>
 
 
   <!-- =====================================================
-       CONTEÚDO PRINCIPAL
+       CONTEÚDO PROTEGIDO
   ====================================================== -->
 
-  <main class="container principal">
+  <div id="conteudoProtegido" hidden>
 
 
     <!-- ===================================================
-         AVISO DE SIGILO
+         CABEÇALHO
     ==================================================== -->
 
-    <section class="alerta-sigilo">
+    <header class="topo">
 
-      <strong>Atenção:</strong>
-
-      os trabalhos, assim como esta página, são sigilosos
-      e destinados exclusivamente ao controle interno da Comissão.
-
-    </section>
-
-
-    <!-- ===================================================
-         PRAZO TOTAL DA CPI
-    ==================================================== -->
-
-    <section class="painel destaque">
-
-      <div class="painel-cabecalho">
+      <div class="container topo-conteudo">
 
         <div>
 
-          <span class="rotulo">
-            Controle de prazo
+          <span class="selo">
+            PÁGINA SIGILOSA
           </span>
 
-          <h2>
-            Prazo total da CPI
-          </h2>
-
-        </div>
-
-
-        <span
-          id="statusPrazo"
-          class="status"
-        >
-          Em andamento
-        </span>
-
-      </div>
-
-
-      <!-- DATAS -->
-
-      <div class="datas-grid">
-
-        <div class="data-card">
-
-          <span>
-            Início
-          </span>
-
-          <strong id="dataInicio">
-            20/08/2026
-          </strong>
-
-        </div>
-
-
-        <div class="data-card">
-
-          <span>
-            Data atual
-          </span>
-
-          <strong id="dataAtual">
-            --/--/----
-          </strong>
-
-        </div>
-
-
-        <div class="data-card">
-
-          <span>
-            Encerramento
-          </span>
-
-          <strong id="dataFim">
-            18/11/2026
-          </strong>
-
-        </div>
-
-      </div>
-
-
-      <!-- BARRA DE PROGRESSO PRINCIPAL -->
-
-      <div class="progresso-grupo">
-
-        <div class="progresso-info">
-
-          <span>
-            Decurso do prazo
-          </span>
-
-          <strong id="percentualPrazo">
-            0%
-          </strong>
-
-        </div>
-
-
-        <div
-          class="barra barra-principal"
-          aria-label="Progresso do prazo da CPI"
-        >
-
-          <div
-            id="barraPrazo"
-            class="barra-preenchimento"
-            style="width: 0%"
-          >
-          </div>
-
-        </div>
-
-
-        <div class="progresso-detalhes">
-
-          <span id="diasDecorridos">
-            0 dias decorridos
-          </span>
-
-          <span id="diasRestantes">
-            0 dias restantes
-          </span>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- ===================================================
-         PROGRESSO DOS TRABALHOS
-    ==================================================== -->
-
-    <section class="painel">
-
-      <div class="painel-cabecalho">
-
-        <div>
-
-          <span class="rotulo">
-            Execução dos trabalhos
-          </span>
-
-          <h2>
-            Cronograma de trabalho concluído
-          </h2>
-
-        </div>
-
-
-        <span
-          id="percentualTrabalhoBadge"
-          class="status secundario"
-        >
-          0%
-        </span>
-
-      </div>
-
-
-      <div class="progresso-grupo">
-
-
-        <!-- BARRA -->
-
-        <div
-          class="barra barra-trabalho"
-          aria-label="Progresso manual dos trabalhos"
-        >
-
-          <div
-            id="barraTrabalho"
-            class="barra-preenchimento trabalho"
-            style="width: 0%"
-          >
-          </div>
-
-        </div>
-
-
-        <!-- CONTROLE MANUAL -->
-
-        <div class="controle-manual">
-
-          <label for="progressoManual">
-            Ajustar progresso dos trabalhos
-          </label>
-
-
-          <div class="controle-linha">
-
-            <input
-              id="progressoManual"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value="0"
-            >
-
-
-            <input
-              id="progressoNumero"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value="0"
-            >
-
-
-            <span>
-              %
-            </span>
-
-          </div>
-
-
-          <p class="ajuda">
-            O percentual é salvo automaticamente neste navegador.
+          <h1>
+            Comissão Parlamentar de Inquérito
+          </h1>
+
+          <p class="subtitulo">
+            Controle cronológico dos trabalhos da CPI de Roseira
           </p>
 
         </div>
 
+
+        <div class="topo-acoes">
+
+          <div
+            class="icone-sigilo"
+            aria-hidden="true"
+          >
+            🔒
+          </div>
+
+          <button
+            id="sairConta"
+            class="botao-sair"
+            type="button"
+          >
+            Sair
+          </button>
+
+        </div>
+
       </div>
 
-    </section>
+    </header>
 
 
     <!-- ===================================================
-         CONTROLE CRONOLÓGICO DAS ATIVIDADES
+         CONTEÚDO PRINCIPAL
     ==================================================== -->
 
-    <section class="painel">
+    <main class="container principal">
 
-      <div class="painel-cabecalho">
 
-        <div>
+      <!-- =================================================
+           AVISO
+      ================================================== -->
 
-          <span class="rotulo">
-            Atividades
+      <section class="alerta-sigilo">
+
+        <strong>Atenção:</strong>
+
+        os trabalhos, assim como esta página, são sigilosos
+        e destinados exclusivamente ao controle interno
+        da Comissão.
+
+      </section>
+
+
+      <!-- =================================================
+           PRAZO TOTAL
+      ================================================== -->
+
+      <section class="painel destaque">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Controle de prazo
+            </span>
+
+            <h2>
+              Prazo total da CPI
+            </h2>
+
+          </div>
+
+
+          <span
+            id="statusPrazo"
+            class="status"
+          >
+            Em andamento
           </span>
 
-          <h2>
-            Controle cronológico
-          </h2>
+        </div>
+
+
+        <div class="datas-grid">
+
+          <div class="data-card">
+
+            <span>
+              Início
+            </span>
+
+            <strong id="dataInicio">
+              20/08/2026
+            </strong>
+
+          </div>
+
+
+          <div class="data-card">
+
+            <span>
+              Data atual
+            </span>
+
+            <strong id="dataAtual">
+              --/--/----
+            </strong>
+
+          </div>
+
+
+          <div class="data-card">
+
+            <span>
+              Encerramento
+            </span>
+
+            <strong id="dataFim">
+              18/11/2026
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="progresso-grupo">
+
+          <div class="progresso-info">
+
+            <span>
+              Decurso do prazo
+            </span>
+
+            <strong id="percentualPrazo">
+              0%
+            </strong>
+
+          </div>
+
+
+          <div
+            class="barra barra-principal"
+            aria-label="Progresso do prazo da CPI"
+          >
+
+            <div
+              id="barraPrazo"
+              class="barra-preenchimento"
+              style="width: 0%"
+            >
+            </div>
+
+          </div>
+
+
+          <div class="progresso-detalhes">
+
+            <span id="diasDecorridos">
+              0 dias decorridos
+            </span>
+
+            <span id="diasRestantes">
+              0 dias restantes
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           PROGRESSO MANUAL
+      ================================================== -->
+
+      <section class="painel">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Execução dos trabalhos
+            </span>
+
+            <h2>
+              Cronograma de trabalho concluído
+            </h2>
+
+          </div>
+
+
+          <span
+            id="percentualTrabalhoBadge"
+            class="status secundario"
+          >
+            0%
+          </span>
+
+        </div>
+
+
+        <div class="progresso-grupo">
+
+          <div
+            class="barra barra-trabalho"
+            aria-label="Progresso manual dos trabalhos"
+          >
+
+            <div
+              id="barraTrabalho"
+              class="barra-preenchimento trabalho"
+              style="width: 0%"
+            >
+            </div>
+
+          </div>
+
+
+          <div class="controle-manual">
+
+            <label for="progressoManual">
+              Ajustar progresso dos trabalhos
+            </label>
+
+
+            <div class="controle-linha">
+
+              <input
+                id="progressoManual"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+              >
+
+
+              <input
+                id="progressoNumero"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+              >
+
+
+              <span>
+                %
+              </span>
+
+            </div>
+
+
+            <p class="ajuda">
+              O percentual é salvo no Firebase e sincronizado
+              entre os dispositivos.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           ATIVIDADES
+      ================================================== -->
+
+      <section class="painel">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Atividades
+            </span>
+
+            <h2>
+              Controle cronológico
+            </h2>
+
+          </div>
+
+
+          <button
+            id="adicionarAtividade"
+            class="botao"
+            type="button"
+          >
+            + Nova atividade
+          </button>
 
         </div>
 
 
         <!--
-          O JavaScript usa este botão para abrir
-          o formulário de inclusão.
+          Os formulários de inclusão e edição
+          são criados automaticamente pelo JavaScript.
         -->
 
-        <button
-          id="adicionarAtividade"
-          class="botao"
-          type="button"
+
+        <div
+          id="listaAtividades"
+          class="atividades"
         >
-          + Nova atividade
-        </button>
+        </div>
+
+
+        <p
+          id="semAtividades"
+          class="vazio"
+        >
+          Nenhuma atividade cadastrada.
+        </p>
+
+      </section>
+
+    </main>
+
+
+    <!-- ===================================================
+         RODAPÉ
+    ==================================================== -->
+
+    <footer>
+
+      <div class="container footer-conteudo">
+
+        <p>
+          Criado para controle cronológico.
+          Os dias são contados automaticamente
+          e as atividades são estabelecidas manualmente.
+        </p>
+
+        <p>
+          Todos os direitos reservados à Comissão Parlamentar
+          de Inquérito de Roseira. Página sigilosa.
+        </p>
 
       </div>
 
+    </footer>
 
-      <!--
-        O formulário de nova atividade será criado
-        automaticamente pelo JavaScript neste ponto.
-      -->
-
-
-      <!-- LISTA DE ATIVIDADES -->
-
-      <div
-        id="listaAtividades"
-        class="atividades"
-      >
-      </div>
-
-
-      <p
-        id="semAtividades"
-        class="vazio"
-      >
-        Nenhuma atividade cadastrada.
-      </p>
-
-    </section>
-
-  </main>
-
-
-  <!-- =====================================================
-       RODAPÉ
-  ====================================================== -->
-
-  <footer>
-
-    <div class="container footer-conteudo">
-
-      <p>
-        Criado para controle cronológico.
-        Os dias são contados automaticamente e as atividades
-        são estabelecidas manualmente.
-      </p>
-
-
-      <p>
-        Todos os direitos reservados à Comissão Parlamentar
-        de Inquérito de Roseira. Página sigilosa.
-      </p>
-
-    </div>
-
-  </footer>
+  </div>
 
 
   <!-- =====================================================
        JAVASCRIPT
   ====================================================== -->
 
-  <script src="script.js"></script>
+  <script
+    type="module"
+    src="script.js"
+  >
+  </script>
 
 </body>
 

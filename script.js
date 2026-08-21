@@ -1,16 +1,115 @@
 'use strict';
 
 /* =========================================================
-   CONFIGURAÇÃO DO PRAZO DA CPI
+   FIREBASE SDK
+========================================================= */
+
+import {
+  initializeApp
+} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
+
+
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+
+
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  setDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
+
+
+/* =========================================================
+   CONFIGURAÇÃO FIREBASE
+========================================================= */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDDNJK6lQdCwwfkAlNTXjZZSGCWY1yyYF8",
+  authDomain: "ceip-31aae.firebaseapp.com",
+  projectId: "ceip-31aae",
+  storageBucket: "ceip-31aae.firebasestorage.app",
+  messagingSenderId: "398480411066",
+  appId: "1:398480411066:web:9ef349268e6524e8fa3583",
+  measurementId: "G-470PQTD7V7"
+};
+
+
+/* =========================================================
+   INICIALIZAÇÃO FIREBASE
+========================================================= */
+
+const app =
+  initializeApp(firebaseConfig);
+
+
+const auth =
+  getAuth(app);
+
+
+const db =
+  getFirestore(app);
+
+
+const googleProvider =
+  new GoogleAuthProvider();
+
+
+/* =========================================================
+   CONFIGURAÇÃO DA CPI
 ========================================================= */
 
 const CONFIG = {
-  inicio: '2026-08-20T00:00:00',
-  fim: '2026-11-18T23:59:59'
+
+  inicio:
+    '2026-08-20T00:00:00',
+
+  fim:
+    '2026-11-18T23:59:59'
+
 };
 
-const CHAVE_ATIVIDADES = 'cpiRoseiraAtividades';
-const CHAVE_PROGRESSO = 'cpiRoseiraProgresso';
+
+/* =========================================================
+   REFERÊNCIAS FIRESTORE
+========================================================= */
+
+const atividadesRef =
+  collection(
+    db,
+    'atividades'
+  );
+
+
+const progressoRef =
+  doc(
+    db,
+    'configuracoes',
+    'progresso'
+  );
+
+
+/* =========================================================
+   CONTROLE INTERNO
+========================================================= */
+
+let painelIniciado = false;
+
+let unsubscribeAtividades = null;
 
 
 /* =========================================================
@@ -18,96 +117,274 @@ const CHAVE_PROGRESSO = 'cpiRoseiraProgresso';
 ========================================================= */
 
 function $(seletor) {
-  return document.querySelector(seletor);
+
+  return document.querySelector(
+    seletor
+  );
+
 }
 
-function limitar(valor, minimo, maximo) {
-  return Math.min(Math.max(valor, minimo), maximo);
+
+function limitar(
+  valor,
+  minimo,
+  maximo
+) {
+
+  return Math.min(
+    Math.max(
+      valor,
+      minimo
+    ),
+    maximo
+  );
+
 }
+
 
 function formatarData(data) {
-  return new Intl.DateTimeFormat('pt-BR').format(data);
+
+  return new Intl.DateTimeFormat(
+    'pt-BR'
+  ).format(data);
+
 }
 
-function formatarDataISO(dataISO) {
-  if (!dataISO) return '';
 
-  const partes = dataISO.split('-');
+function formatarDataISO(dataISO) {
+
+  if (!dataISO) {
+    return '';
+  }
+
+
+  const partes =
+    dataISO.split('-');
+
 
   if (partes.length !== 3) {
     return dataISO;
   }
 
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+  return (
+    partes[2] +
+    '/' +
+    partes[1] +
+    '/' +
+    partes[0]
+  );
+
 }
 
 
 /* =========================================================
-   LOCAL STORAGE
+   SEGURANÇA DE TEXTO
 ========================================================= */
 
-function lerStorage(chave, valorPadrao) {
-  try {
-    const valor = localStorage.getItem(chave);
+function criarElementoTexto(
+  tag,
+  classe,
+  texto
+) {
 
-    if (valor === null) {
-      return valorPadrao;
-    }
+  const elemento =
+    document.createElement(tag);
 
-    return JSON.parse(valor);
 
-  } catch (erro) {
-    console.error('Erro ao ler localStorage:', erro);
-    return valorPadrao;
+  if (classe) {
+
+    elemento.className =
+      classe;
+
   }
+
+
+  elemento.textContent =
+    texto || '';
+
+
+  return elemento;
+
 }
 
-function salvarStorage(chave, valor) {
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+async function entrarComGoogle() {
+
   try {
-    localStorage.setItem(
-      chave,
-      JSON.stringify(valor)
+
+    await signInWithPopup(
+      auth,
+      googleProvider
     );
 
   } catch (erro) {
-    console.error('Erro ao salvar localStorage:', erro);
+
+    console.error(
+      'Erro no login:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível entrar com a conta Google.'
+    );
+
   }
+
 }
 
 
 /* =========================================================
-   PRAZO TOTAL DA CPI
+   LOGOUT
+========================================================= */
+
+async function sairDaConta() {
+
+  try {
+
+    await signOut(auth);
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao sair:',
+      erro
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   AUTENTICAÇÃO
+========================================================= */
+
+onAuthStateChanged(
+  auth,
+  async function (usuario) {
+
+    const telaLogin =
+      $('#telaLogin');
+
+
+    const conteudo =
+      $('#conteudoProtegido');
+
+
+    if (usuario) {
+
+      if (telaLogin) {
+        telaLogin.hidden = true;
+      }
+
+
+      if (conteudo) {
+        conteudo.hidden = false;
+      }
+
+
+      await iniciarPainel();
+
+    }
+
+    else {
+
+      if (conteudo) {
+        conteudo.hidden = true;
+      }
+
+
+      if (telaLogin) {
+        telaLogin.hidden = false;
+      }
+
+
+      painelIniciado = false;
+
+
+      if (unsubscribeAtividades) {
+
+        unsubscribeAtividades();
+
+        unsubscribeAtividades = null;
+
+      }
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PRAZO TOTAL
 ========================================================= */
 
 function atualizarPrazo() {
 
-  const inicio = new Date(CONFIG.inicio);
-  const fim = new Date(CONFIG.fim);
-  const agora = new Date();
+  const inicio =
+    new Date(
+      CONFIG.inicio
+    );
 
-  const total = fim.getTime() - inicio.getTime();
 
-  let decorrido = agora.getTime() - inicio.getTime();
+  const fim =
+    new Date(
+      CONFIG.fim
+    );
 
-  decorrido = limitar(
-    decorrido,
-    0,
-    total
-  );
+
+  const agora =
+    new Date();
+
+
+  const total =
+    fim.getTime() -
+    inicio.getTime();
+
+
+  let decorrido =
+    agora.getTime() -
+    inicio.getTime();
+
+
+  decorrido =
+    limitar(
+      decorrido,
+      0,
+      total
+    );
+
 
   const percentual =
     total > 0
-      ? (decorrido / total) * 100
+      ? (
+          decorrido /
+          total
+        ) * 100
       : 0;
 
+
   const umDia =
-    1000 * 60 * 60 * 24;
+    1000 *
+    60 *
+    60 *
+    24;
 
 
   const diasDecorridos =
     agora < inicio
       ? 0
-      : Math.floor(decorrido / umDia);
+      : Math.floor(
+          decorrido /
+          umDia
+        );
 
 
   const diasRestantes =
@@ -116,64 +393,111 @@ function atualizarPrazo() {
       : Math.max(
           0,
           Math.ceil(
-            (fim.getTime() - agora.getTime()) / umDia
+            (
+              fim.getTime() -
+              agora.getTime()
+            ) /
+            umDia
           )
         );
 
 
-  const dataInicio = $('#dataInicio');
-  const dataAtual = $('#dataAtual');
-  const dataFim = $('#dataFim');
+  const dataInicio =
+    $('#dataInicio');
+
+
+  const dataAtual =
+    $('#dataAtual');
+
+
+  const dataFim =
+    $('#dataFim');
+
 
   const percentualPrazo =
     $('#percentualPrazo');
 
+
   const barraPrazo =
     $('#barraPrazo');
+
 
   const diasDecorridosEl =
     $('#diasDecorridos');
 
+
   const diasRestantesEl =
     $('#diasRestantes');
+
 
   const statusPrazo =
     $('#statusPrazo');
 
 
   if (dataInicio) {
+
     dataInicio.textContent =
       formatarData(inicio);
+
   }
+
 
   if (dataAtual) {
+
     dataAtual.textContent =
       formatarData(agora);
+
   }
+
 
   if (dataFim) {
+
     dataFim.textContent =
       formatarData(fim);
+
   }
+
 
   if (percentualPrazo) {
+
     percentualPrazo.textContent =
-      percentual.toFixed(1) + '%';
+      percentual.toFixed(1) +
+      '%';
+
   }
+
 
   if (barraPrazo) {
+
     barraPrazo.style.width =
       percentual + '%';
+
   }
+
 
   if (diasDecorridosEl) {
+
     diasDecorridosEl.textContent =
-      diasDecorridos + ' dias decorridos';
+      diasDecorridos +
+      (
+        diasDecorridos === 1
+          ? ' dia decorrido'
+          : ' dias decorridos'
+      );
+
   }
 
+
   if (diasRestantesEl) {
+
     diasRestantesEl.textContent =
-      diasRestantes + ' dias restantes';
+      diasRestantes +
+      (
+        diasRestantes === 1
+          ? ' dia restante'
+          : ' dias restantes'
+      );
+
   }
 
 
@@ -184,12 +508,16 @@ function atualizarPrazo() {
       statusPrazo.textContent =
         'Ainda não iniciado';
 
-    } else if (agora > fim) {
+    }
+
+    else if (agora > fim) {
 
       statusPrazo.textContent =
         'Prazo encerrado';
 
-    } else {
+    }
+
+    else {
 
       statusPrazo.textContent =
         'Em andamento';
@@ -202,91 +530,186 @@ function atualizarPrazo() {
 
 
 /* =========================================================
-   BARRA MANUAL DO CRONOGRAMA
+   MOSTRAR PROGRESSO DOS TRABALHOS
 ========================================================= */
 
-function atualizarProgressoManual(valor) {
+function mostrarProgresso(valor) {
 
-  const numero = limitar(
-    Number(valor) || 0,
-    0,
-    100
-  );
+  const numero =
+    limitar(
+      Number(valor) || 0,
+      0,
+      100
+    );
+
 
   const range =
     $('#progressoManual');
 
+
   const numeroInput =
     $('#progressoNumero');
 
+
   const barra =
     $('#barraTrabalho');
+
 
   const badge =
     $('#percentualTrabalhoBadge');
 
 
   if (range) {
-    range.value = numero;
+
+    range.value =
+      numero;
+
   }
+
 
   if (numeroInput) {
-    numeroInput.value = numero;
+
+    numeroInput.value =
+      numero;
+
   }
+
 
   if (barra) {
+
     barra.style.width =
       numero + '%';
+
   }
+
 
   if (badge) {
+
     badge.textContent =
       numero + '%';
+
   }
 
-
-  salvarStorage(
-    CHAVE_PROGRESSO,
-    numero
-  );
-
 }
 
 
 /* =========================================================
-   ATIVIDADES
+   CARREGAR PROGRESSO
 ========================================================= */
 
-function obterAtividades() {
+async function carregarProgresso() {
 
-  return lerStorage(
-    CHAVE_ATIVIDADES,
-    []
-  );
+  try {
 
-}
+    const snapshot =
+      await getDoc(
+        progressoRef
+      );
 
-function salvarAtividades(atividades) {
 
-  salvarStorage(
-    CHAVE_ATIVIDADES,
-    atividades
-  );
+    if (snapshot.exists()) {
+
+      const dados =
+        snapshot.data();
+
+
+      mostrarProgresso(
+        dados.percentual || 0
+      );
+
+    }
+
+    else {
+
+      mostrarProgresso(0);
+
+    }
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao carregar progresso:',
+      erro
+    );
+
+  }
 
 }
 
 
 /* =========================================================
-   ABRIR FORMULÁRIO PARA NOVA ATIVIDADE
+   SALVAR PROGRESSO
+========================================================= */
+
+async function salvarProgresso(
+  valor
+) {
+
+  const percentual =
+    limitar(
+      Number(valor) || 0,
+      0,
+      100
+    );
+
+
+  mostrarProgresso(
+    percentual
+  );
+
+
+  try {
+
+    await setDoc(
+      progressoRef,
+      {
+
+        percentual:
+          percentual,
+
+        atualizadoEm:
+          serverTimestamp(),
+
+        atualizadoPor:
+          auth.currentUser
+            ? auth.currentUser.email
+            : null
+
+      },
+      {
+        merge: true
+      }
+    );
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao salvar progresso:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível salvar o progresso.'
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   NOVA ATIVIDADE
 ========================================================= */
 
 function abrirFormularioAtividade() {
 
-  /*
-    Impede abrir mais de um formulário.
-  */
-
   if ($('#formNovaAtividade')) {
+    return;
+  }
+
+
+  if ($('#formEditarAtividade')) {
     return;
   }
 
@@ -294,12 +717,8 @@ function abrirFormularioAtividade() {
   const lista =
     $('#listaAtividades');
 
+
   if (!lista) {
-
-    alert(
-      'Não foi possível localizar a área de atividades.'
-    );
-
     return;
   }
 
@@ -307,8 +726,10 @@ function abrirFormularioAtividade() {
   const formulario =
     document.createElement('div');
 
+
   formulario.id =
     'formNovaAtividade';
+
 
   formulario.className =
     'form-nova-atividade';
@@ -318,13 +739,15 @@ function abrirFormularioAtividade() {
 
     <div class="form-atividade-cabecalho">
 
-      <h3>Nova atividade</h3>
+      <h3>
+        Nova atividade
+      </h3>
 
       <button
-        type="button"
         id="cancelarNovaAtividade"
+        type="button"
         class="btn-cancelar-atividade"
-        title="Cancelar"
+        aria-label="Cancelar"
       >
         ×
       </button>
@@ -339,10 +762,10 @@ function abrirFormularioAtividade() {
       </label>
 
       <input
-        type="text"
         id="novaAtividadeTitulo"
+        type="text"
+        maxlength="200"
         placeholder="Ex.: Solicitação de documentos"
-        autocomplete="off"
       >
 
     </div>
@@ -355,8 +778,8 @@ function abrirFormularioAtividade() {
       </label>
 
       <input
-        type="date"
         id="novaAtividadeData"
+        type="date"
       >
 
     </div>
@@ -368,7 +791,9 @@ function abrirFormularioAtividade() {
         Status
       </label>
 
-      <select id="novaAtividadeStatus">
+      <select
+        id="novaAtividadeStatus"
+      >
 
         <option value="Pendente">
           Pendente
@@ -396,15 +821,16 @@ function abrirFormularioAtividade() {
       <textarea
         id="novaAtividadeDescricao"
         rows="4"
-        placeholder="Descreva brevemente a atividade..."
+        maxlength="2000"
+        placeholder="Descreva a atividade ou providência..."
       ></textarea>
 
     </div>
 
 
     <button
-      type="button"
       id="salvarNovaAtividade"
+      type="button"
       class="btn-salvar-atividade"
     >
       Salvar atividade
@@ -413,27 +839,23 @@ function abrirFormularioAtividade() {
   `;
 
 
-  /*
-    O formulário aparece antes da lista
-    de atividades.
-  */
-
   lista.parentNode.insertBefore(
     formulario,
     lista
   );
 
 
+  const cancelar =
+    $('#cancelarNovaAtividade');
+
+
+  const salvar =
+    $('#salvarNovaAtividade');
+
+
   const titulo =
     $('#novaAtividadeTitulo');
 
-  if (titulo) {
-    titulo.focus();
-  }
-
-
-  const cancelar =
-    $('#cancelarNovaAtividade');
 
   if (cancelar) {
 
@@ -449,15 +871,19 @@ function abrirFormularioAtividade() {
   }
 
 
-  const salvar =
-    $('#salvarNovaAtividade');
-
   if (salvar) {
 
     salvar.addEventListener(
       'click',
       salvarNovaAtividade
     );
+
+  }
+
+
+  if (titulo) {
+
+    titulo.focus();
 
   }
 
@@ -468,16 +894,19 @@ function abrirFormularioAtividade() {
    SALVAR NOVA ATIVIDADE
 ========================================================= */
 
-function salvarNovaAtividade() {
+async function salvarNovaAtividade() {
 
   const tituloInput =
     $('#novaAtividadeTitulo');
 
+
   const dataInput =
     $('#novaAtividadeData');
 
+
   const statusInput =
     $('#novaAtividadeStatus');
+
 
   const descricaoInput =
     $('#novaAtividadeDescricao');
@@ -489,22 +918,22 @@ function salvarNovaAtividade() {
     !statusInput
   ) {
 
-    alert(
-      'Não foi possível localizar os campos do formulário.'
-    );
-
     return;
+
   }
 
 
   const titulo =
     tituloInput.value.trim();
 
+
   const data =
     dataInput.value;
 
+
   const status =
     statusInput.value;
+
 
   const descricao =
     descricaoInput
@@ -518,173 +947,724 @@ function salvarNovaAtividade() {
       'Informe a atividade.'
     );
 
+
     tituloInput.focus();
 
     return;
+
   }
 
 
   if (!data) {
 
     alert(
-      'Informe a data da atividade.'
+      'Informe a data.'
     );
+
 
     dataInput.focus();
 
     return;
+
   }
 
 
-  const novaAtividade = {
-
-    id:
-      Date.now(),
-
-    titulo:
-      titulo,
-
-    data:
-      data,
-
-    status:
-      status,
-
-    descricao:
-      descricao,
-
-    criadaEm:
-      new Date().toISOString()
-
-  };
+  const botao =
+    $('#salvarNovaAtividade');
 
 
-  const atividades =
-    obterAtividades();
+  if (botao) {
 
+    botao.disabled = true;
 
-  atividades.push(
-    novaAtividade
-  );
+    botao.textContent =
+      'Salvando...';
 
-
-  salvarAtividades(
-    atividades
-  );
-
-
-  const formulario =
-    $('#formNovaAtividade');
-
-  if (formulario) {
-    formulario.remove();
   }
 
 
-  carregarAtividades();
+  try {
+
+    await addDoc(
+      atividadesRef,
+      {
+
+        titulo:
+          titulo,
+
+        data:
+          data,
+
+        status:
+          status,
+
+        descricao:
+          descricao,
+
+        criadaEm:
+          serverTimestamp(),
+
+        atualizadaEm:
+          null,
+
+        criadoPor:
+          auth.currentUser
+            ? auth.currentUser.email
+            : null
+
+      }
+    );
+
+
+    const formulario =
+      $('#formNovaAtividade');
+
+
+    if (formulario) {
+
+      formulario.remove();
+
+    }
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao salvar atividade:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível salvar a atividade.'
+    );
+
+
+    if (botao) {
+
+      botao.disabled = false;
+
+      botao.textContent =
+        'Salvar atividade';
+
+    }
+
+  }
 
 }
 
 
 /* =========================================================
-   CRIAR CARTÃO DA ATIVIDADE
-   APENAS LEITURA
+   ABRIR EDIÇÃO
 ========================================================= */
 
-function criarCardAtividade(atividade) {
+function abrirEdicao(
+  id,
+  atividade
+) {
+
+  if ($('#formEditarAtividade')) {
+    return;
+  }
+
+
+  const formularioNova =
+    $('#formNovaAtividade');
+
+
+  if (formularioNova) {
+
+    formularioNova.remove();
+
+  }
+
+
+  const lista =
+    $('#listaAtividades');
+
+
+  if (!lista) {
+    return;
+  }
+
+
+  const formulario =
+    document.createElement('div');
+
+
+  formulario.id =
+    'formEditarAtividade';
+
+
+  formulario.className =
+    'form-nova-atividade';
+
+
+  formulario.innerHTML = `
+
+    <div class="form-atividade-cabecalho">
+
+      <h3>
+        Editar atividade
+      </h3>
+
+      <button
+        id="cancelarEdicaoAtividade"
+        type="button"
+        class="btn-cancelar-atividade"
+        aria-label="Cancelar"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="campo-atividade">
+
+      <label for="editarTitulo">
+        Atividade
+      </label>
+
+      <input
+        id="editarTitulo"
+        type="text"
+        maxlength="200"
+      >
+
+    </div>
+
+
+    <div class="campo-atividade">
+
+      <label for="editarData">
+        Data
+      </label>
+
+      <input
+        id="editarData"
+        type="date"
+      >
+
+    </div>
+
+
+    <div class="campo-atividade">
+
+      <label for="editarStatus">
+        Status
+      </label>
+
+      <select
+        id="editarStatus"
+      >
+
+        <option value="Pendente">
+          Pendente
+        </option>
+
+        <option value="Em andamento">
+          Em andamento
+        </option>
+
+        <option value="Concluída">
+          Concluída
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="campo-atividade">
+
+      <label for="editarDescricao">
+        Observação
+      </label>
+
+      <textarea
+        id="editarDescricao"
+        rows="4"
+        maxlength="2000"
+      ></textarea>
+
+    </div>
+
+
+    <button
+      id="salvarEdicaoAtividade"
+      type="button"
+      class="btn-salvar-atividade"
+    >
+      Salvar alterações
+    </button>
+
+  `;
+
+
+  lista.parentNode.insertBefore(
+    formulario,
+    lista
+  );
+
+
+  $('#editarTitulo').value =
+    atividade.titulo || '';
+
+
+  $('#editarData').value =
+    atividade.data || '';
+
+
+  $('#editarStatus').value =
+    atividade.status || 'Pendente';
+
+
+  $('#editarDescricao').value =
+    atividade.descricao || '';
+
+
+  $('#cancelarEdicaoAtividade')
+    .addEventListener(
+      'click',
+      function () {
+
+        formulario.remove();
+
+      }
+    );
+
+
+  $('#salvarEdicaoAtividade')
+    .addEventListener(
+      'click',
+      function () {
+
+        salvarEdicaoAtividade(
+          id
+        );
+
+      }
+    );
+
+
+  formulario.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+}
+
+
+/* =========================================================
+   SALVAR EDIÇÃO
+========================================================= */
+
+async function salvarEdicaoAtividade(
+  id
+) {
+
+  const titulo =
+    $('#editarTitulo')
+      .value
+      .trim();
+
+
+  const data =
+    $('#editarData')
+      .value;
+
+
+  const status =
+    $('#editarStatus')
+      .value;
+
+
+  const descricao =
+    $('#editarDescricao')
+      .value
+      .trim();
+
+
+  if (!titulo) {
+
+    alert(
+      'Informe a atividade.'
+    );
+
+    return;
+
+  }
+
+
+  if (!data) {
+
+    alert(
+      'Informe a data.'
+    );
+
+    return;
+
+  }
+
+
+  const botao =
+    $('#salvarEdicaoAtividade');
+
+
+  if (botao) {
+
+    botao.disabled = true;
+
+    botao.textContent =
+      'Salvando...';
+
+  }
+
+
+  try {
+
+    await updateDoc(
+      doc(
+        db,
+        'atividades',
+        id
+      ),
+      {
+
+        titulo:
+          titulo,
+
+        data:
+          data,
+
+        status:
+          status,
+
+        descricao:
+          descricao,
+
+        atualizadaEm:
+          serverTimestamp(),
+
+        atualizadoPor:
+          auth.currentUser
+            ? auth.currentUser.email
+            : null
+
+      }
+    );
+
+
+    const formulario =
+      $('#formEditarAtividade');
+
+
+    if (formulario) {
+
+      formulario.remove();
+
+    }
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao editar atividade:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível salvar a alteração.'
+    );
+
+
+    if (botao) {
+
+      botao.disabled = false;
+
+      botao.textContent =
+        'Salvar alterações';
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   EXCLUIR ATIVIDADE
+========================================================= */
+
+async function excluirAtividade(
+  id
+) {
+
+  const confirmar =
+    confirm(
+      'Tem certeza que deseja excluir esta atividade?'
+    );
+
+
+  if (!confirmar) {
+    return;
+  }
+
+
+  try {
+
+    await deleteDoc(
+      doc(
+        db,
+        'atividades',
+        id
+      )
+    );
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao excluir atividade:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível excluir a atividade.'
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CRIAR CARD DE ATIVIDADE
+========================================================= */
+
+function criarCardAtividade(
+  id,
+  atividade
+) {
 
   const card =
-    document.createElement('article');
+    document.createElement(
+      'article'
+    );
+
 
   card.className =
     'atividade-card';
 
 
   const topo =
-    document.createElement('div');
+    document.createElement(
+      'div'
+    );
+
 
   topo.className =
     'atividade-topo';
 
 
+  const blocoDados =
+    document.createElement(
+      'div'
+    );
+
+
   const titulo =
-    document.createElement('h3');
-
-  titulo.className =
-    'atividade-titulo';
-
-  titulo.textContent =
-    atividade.titulo;
+    criarElementoTexto(
+      'h3',
+      'atividade-titulo',
+      atividade.titulo
+    );
 
 
   const meta =
-    document.createElement('div');
+    document.createElement(
+      'div'
+    );
+
 
   meta.className =
     'atividade-meta';
 
 
   const data =
-    document.createElement('span');
-
-  data.className =
-    'atividade-data';
-
-  data.textContent =
-    formatarDataISO(
-      atividade.data
+    criarElementoTexto(
+      'span',
+      'atividade-data',
+      formatarDataISO(
+        atividade.data
+      )
     );
 
 
   const status =
-    document.createElement('span');
+    criarElementoTexto(
+      'span',
+      'atividade-status',
+      atividade.status
+    );
 
-  status.className =
-    'atividade-status';
-
-
-  /*
-    Cria classe CSS de acordo com o status.
-  */
 
   const classeStatus =
-    atividade.status
+    (
+      atividade.status ||
+      ''
+    )
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, '-');
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      )
+      .replace(
+        /\s+/g,
+        '-'
+      );
 
 
   status.classList.add(
-    'status-' + classeStatus
+    'status-' +
+    classeStatus
   );
 
 
-  status.textContent =
-    atividade.status;
+  meta.appendChild(
+    data
+  );
 
 
-  meta.appendChild(data);
-  meta.appendChild(status);
+  meta.appendChild(
+    status
+  );
 
 
-  topo.appendChild(titulo);
-  topo.appendChild(meta);
+  blocoDados.appendChild(
+    titulo
+  );
 
 
-  card.appendChild(topo);
+  blocoDados.appendChild(
+    meta
+  );
+
+
+  const acoes =
+    document.createElement(
+      'div'
+    );
+
+
+  acoes.className =
+    'atividade-acoes';
+
+
+  const editar =
+    document.createElement(
+      'button'
+    );
+
+
+  editar.type =
+    'button';
+
+
+  editar.className =
+    'botao-editar';
+
+
+  editar.title =
+    'Editar atividade';
+
+
+  editar.textContent =
+    '✏️';
+
+
+  const excluir =
+    document.createElement(
+      'button'
+    );
+
+
+  excluir.type =
+    'button';
+
+
+  excluir.className =
+    'botao-excluir';
+
+
+  excluir.title =
+    'Excluir atividade';
+
+
+  excluir.textContent =
+    '🗑️';
+
+
+  editar.addEventListener(
+    'click',
+    function () {
+
+      abrirEdicao(
+        id,
+        atividade
+      );
+
+    }
+  );
+
+
+  excluir.addEventListener(
+    'click',
+    function () {
+
+      excluirAtividade(
+        id
+      );
+
+    }
+  );
+
+
+  acoes.appendChild(
+    editar
+  );
+
+
+  acoes.appendChild(
+    excluir
+  );
+
+
+  topo.appendChild(
+    blocoDados
+  );
+
+
+  topo.appendChild(
+    acoes
+  );
+
+
+  card.appendChild(
+    topo
+  );
 
 
   if (atividade.descricao) {
 
     const descricao =
-      document.createElement('p');
+      criarElementoTexto(
+        'p',
+        'atividade-descricao',
+        atividade.descricao
+      );
 
-    descricao.className =
-      'atividade-descricao';
-
-    descricao.textContent =
-      atividade.descricao;
 
     card.appendChild(
       descricao
@@ -693,34 +1673,20 @@ function criarCardAtividade(atividade) {
   }
 
 
-  /*
-    IMPORTANTE:
-
-    Aqui NÃO existem:
-
-    - botão editar;
-    - botão excluir;
-    - select de alteração;
-    - botão alterar status.
-
-    Após salva, a atividade fica
-    somente para leitura.
-  */
-
-
   return card;
 
 }
 
 
 /* =========================================================
-   CARREGAR ATIVIDADES SALVAS
+   FIRESTORE EM TEMPO REAL
 ========================================================= */
 
-function carregarAtividades() {
+function escutarAtividades() {
 
   const lista =
     $('#listaAtividades');
+
 
   const semAtividades =
     $('#semAtividades');
@@ -731,104 +1697,122 @@ function carregarAtividades() {
   }
 
 
-  lista.innerHTML = '';
+  const consulta =
+    query(
+      atividadesRef,
+      orderBy(
+        'data',
+        'asc'
+      )
+    );
 
 
-  const atividades =
-    obterAtividades();
+  unsubscribeAtividades =
+    onSnapshot(
+      consulta,
+
+      function (snapshot) {
+
+        lista.innerHTML = '';
 
 
-  /*
-    Ordena cronologicamente.
-  */
+        snapshot.forEach(
+          function (documento) {
 
-  atividades.sort(
-    function (a, b) {
-
-      return (
-        new Date(a.data) -
-        new Date(b.data)
-      );
-
-    }
-  );
+            const atividade =
+              documento.data();
 
 
-  atividades.forEach(
-    function (atividade) {
+            const card =
+              criarCardAtividade(
+                documento.id,
+                atividade
+              );
 
-      const card =
-        criarCardAtividade(
-          atividade
+
+            lista.appendChild(
+              card
+            );
+
+          }
         );
 
-      lista.appendChild(
-        card
-      );
 
-    }
-  );
+        if (semAtividades) {
+
+          semAtividades.hidden =
+            !snapshot.empty;
+
+        }
+
+      },
+
+      function (erro) {
+
+        console.error(
+          'Erro ao carregar atividades:',
+          erro
+        );
 
 
-  if (semAtividades) {
+        alert(
+          'Não foi possível carregar as atividades.'
+        );
 
-    semAtividades.hidden =
-      atividades.length > 0;
-
-  }
+      }
+    );
 
 }
 
 
 /* =========================================================
-   CONFIGURAÇÃO DOS BOTÕES
+   EVENTOS DO PAINEL
 ========================================================= */
 
-function configurarEventos() {
+function configurarEventosPainel() {
 
-  /*
-    BOTÃO + NOVA ATIVIDADE
-  */
-
-  const adicionarAtividade =
+  const adicionar =
     $('#adicionarAtividade');
 
 
-  if (adicionarAtividade) {
+  const range =
+    $('#progressoManual');
 
-    adicionarAtividade.addEventListener(
+
+  const numero =
+    $('#progressoNumero');
+
+
+  if (adicionar) {
+
+    adicionar.addEventListener(
       'click',
-      function (evento) {
-
-        evento.preventDefault();
-
-        abrirFormularioAtividade();
-
-      }
+      abrirFormularioAtividade
     );
 
   }
 
 
-  /*
-    BARRA MANUAL
-  */
+  if (range) {
 
-  const progressoManual =
-    $('#progressoManual');
-
-  const progressoNumero =
-    $('#progressoNumero');
-
-
-  if (progressoManual) {
-
-    progressoManual.addEventListener(
+    range.addEventListener(
       'input',
       function () {
 
-        atualizarProgressoManual(
-          progressoManual.value
+        mostrarProgresso(
+          this.value
+        );
+
+      }
+    );
+
+
+    range.addEventListener(
+      'change',
+      function () {
+
+        salvarProgresso(
+          this.value
         );
 
       }
@@ -837,14 +1821,26 @@ function configurarEventos() {
   }
 
 
-  if (progressoNumero) {
+  if (numero) {
 
-    progressoNumero.addEventListener(
+    numero.addEventListener(
       'input',
       function () {
 
-        atualizarProgressoManual(
-          progressoNumero.value
+        mostrarProgresso(
+          this.value
+        );
+
+      }
+    );
+
+
+    numero.addEventListener(
+      'change',
+      function () {
+
+        salvarProgresso(
+          this.value
         );
 
       }
@@ -856,47 +1852,30 @@ function configurarEventos() {
 
 
 /* =========================================================
-   INICIALIZAÇÃO
+   INICIAR PAINEL
 ========================================================= */
 
-function iniciarPagina() {
+async function iniciarPainel() {
+
+  if (painelIniciado) {
+    return;
+  }
+
+
+  painelIniciado = true;
+
 
   atualizarPrazo();
 
 
-  /*
-    Recupera o percentual manual.
-  */
-
-  const progressoSalvo =
-    lerStorage(
-      CHAVE_PROGRESSO,
-      0
-    );
+  await carregarProgresso();
 
 
-  atualizarProgressoManual(
-    progressoSalvo
-  );
+  configurarEventosPainel();
 
 
-  /*
-    Carrega atividades existentes.
-  */
+  escutarAtividades();
 
-  carregarAtividades();
-
-
-  /*
-    Configura os botões.
-  */
-
-  configurarEventos();
-
-
-  /*
-    Atualiza o prazo automaticamente.
-  */
 
   setInterval(
     atualizarPrazo,
@@ -907,20 +1886,32 @@ function iniciarPagina() {
 
 
 /* =========================================================
-   INICIAR SOMENTE APÓS CARREGAMENTO DO HTML
+   EVENTOS LOGIN E LOGOUT
 ========================================================= */
 
-if (
-  document.readyState === 'loading'
-) {
+const botaoEntrar =
+  $('#entrarGoogle');
 
-  document.addEventListener(
-    'DOMContentLoaded',
-    iniciarPagina
+
+const botaoSair =
+  $('#sairConta');
+
+
+if (botaoEntrar) {
+
+  botaoEntrar.addEventListener(
+    'click',
+    entrarComGoogle
   );
 
-} else {
+}
 
-  iniciarPagina();
+
+if (botaoSair) {
+
+  botaoSair.addEventListener(
+    'click',
+    sairDaConta
+  );
 
 }
