@@ -8,7 +8,6 @@ import {
   initializeApp
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
 
-
 import {
   getAuth,
   GoogleAuthProvider,
@@ -16,7 +15,6 @@ import {
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
-
 
 import {
   getFirestore,
@@ -50,20 +48,25 @@ const firebaseConfig = {
 
 
 /* =========================================================
+   ADMINISTRADOR
+========================================================= */
+
+const EMAIL_ADMIN =
+  'breneradvocacia@gmail.com';
+
+
+/* =========================================================
    INICIALIZAÇÃO FIREBASE
 ========================================================= */
 
 const app =
   initializeApp(firebaseConfig);
 
-
 const auth =
   getAuth(app);
 
-
 const db =
   getFirestore(app);
-
 
 const googleProvider =
   new GoogleAuthProvider();
@@ -74,18 +77,13 @@ const googleProvider =
 ========================================================= */
 
 const CONFIG = {
-
-  inicio:
-    '2026-08-20T00:00:00',
-
-  fim:
-    '2026-11-18T23:59:59'
-
+  inicio: '2026-08-20T00:00:00',
+  fim: '2026-11-18T23:59:59'
 };
 
 
 /* =========================================================
-   REFERÊNCIAS FIRESTORE
+   FIRESTORE
 ========================================================= */
 
 const atividadesRef =
@@ -93,7 +91,6 @@ const atividadesRef =
     db,
     'atividades'
   );
-
 
 const progressoRef =
   doc(
@@ -104,12 +101,14 @@ const progressoRef =
 
 
 /* =========================================================
-   CONTROLE INTERNO
+   CONTROLE
 ========================================================= */
 
 let painelIniciado = false;
 
 let unsubscribeAtividades = null;
+
+let usuarioEhAdmin = false;
 
 
 /* =========================================================
@@ -117,11 +116,7 @@ let unsubscribeAtividades = null;
 ========================================================= */
 
 function $(seletor) {
-
-  return document.querySelector(
-    seletor
-  );
-
+  return document.querySelector(seletor);
 }
 
 
@@ -130,7 +125,6 @@ function limitar(
   minimo,
   maximo
 ) {
-
   return Math.min(
     Math.max(
       valor,
@@ -138,16 +132,13 @@ function limitar(
     ),
     maximo
   );
-
 }
 
 
 function formatarData(data) {
-
   return new Intl.DateTimeFormat(
     'pt-BR'
   ).format(data);
-
 }
 
 
@@ -157,15 +148,12 @@ function formatarDataISO(dataISO) {
     return '';
   }
 
-
   const partes =
     dataISO.split('-');
-
 
   if (partes.length !== 3) {
     return dataISO;
   }
-
 
   return (
     partes[2] +
@@ -174,12 +162,11 @@ function formatarDataISO(dataISO) {
     '/' +
     partes[0]
   );
-
 }
 
 
 /* =========================================================
-   SEGURANÇA DE TEXTO
+   CRIAR ELEMENTO SEGURO
 ========================================================= */
 
 function criarElementoTexto(
@@ -191,20 +178,101 @@ function criarElementoTexto(
   const elemento =
     document.createElement(tag);
 
-
   if (classe) {
-
     elemento.className =
       classe;
-
   }
-
 
   elemento.textContent =
     texto || '';
 
-
   return elemento;
+}
+
+
+/* =========================================================
+   VERIFICAR ADMINISTRADOR
+========================================================= */
+
+function verificarAdministrador(usuario) {
+
+  if (!usuario) {
+    usuarioEhAdmin = false;
+    return false;
+  }
+
+  const email =
+    (usuario.email || '')
+      .toLowerCase();
+
+  usuarioEhAdmin =
+    email ===
+    EMAIL_ADMIN.toLowerCase();
+
+  return usuarioEhAdmin;
+}
+
+
+/* =========================================================
+   AJUSTAR INTERFACE CONFORME PERFIL
+========================================================= */
+
+function aplicarPermissoesInterface() {
+
+  const botaoAdicionar =
+    $('#adicionarAtividade');
+
+  const progressoManual =
+    $('#progressoManual');
+
+  const progressoNumero =
+    $('#progressoNumero');
+
+  const ajuda =
+    document.querySelector(
+      '.controle-manual .ajuda'
+    );
+
+
+  if (botaoAdicionar) {
+
+    botaoAdicionar.hidden =
+      !usuarioEhAdmin;
+
+  }
+
+
+  if (progressoManual) {
+
+    progressoManual.disabled =
+      !usuarioEhAdmin;
+
+  }
+
+
+  if (progressoNumero) {
+
+    progressoNumero.disabled =
+      !usuarioEhAdmin;
+
+  }
+
+
+  if (ajuda) {
+
+    if (usuarioEhAdmin) {
+
+      ajuda.textContent =
+        'O percentual é salvo no Firebase e sincronizado entre os dispositivos.';
+
+    } else {
+
+      ajuda.textContent =
+        'Modo de visualização. Somente o administrador pode alterar o progresso.';
+
+    }
+
+  }
 
 }
 
@@ -228,7 +296,6 @@ async function entrarComGoogle() {
       'Erro no login:',
       erro
     );
-
 
     alert(
       'Não foi possível entrar com a conta Google.'
@@ -272,21 +339,34 @@ onAuthStateChanged(
     const telaLogin =
       $('#telaLogin');
 
-
     const conteudo =
       $('#conteudoProtegido');
 
 
     if (usuario) {
 
+      verificarAdministrador(
+        usuario
+      );
+
+
       if (telaLogin) {
-        telaLogin.hidden = true;
+
+        telaLogin.hidden =
+          true;
+
       }
 
 
       if (conteudo) {
-        conteudo.hidden = false;
+
+        conteudo.hidden =
+          false;
+
       }
+
+
+      aplicarPermissoesInterface();
 
 
       await iniciarPainel();
@@ -295,24 +375,36 @@ onAuthStateChanged(
 
     else {
 
+      usuarioEhAdmin =
+        false;
+
+
       if (conteudo) {
-        conteudo.hidden = true;
+
+        conteudo.hidden =
+          true;
+
       }
 
 
       if (telaLogin) {
-        telaLogin.hidden = false;
+
+        telaLogin.hidden =
+          false;
+
       }
 
 
-      painelIniciado = false;
+      painelIniciado =
+        false;
 
 
       if (unsubscribeAtividades) {
 
         unsubscribeAtividades();
 
-        unsubscribeAtividades = null;
+        unsubscribeAtividades =
+          null;
 
       }
 
@@ -333,12 +425,10 @@ function atualizarPrazo() {
       CONFIG.inicio
     );
 
-
   const fim =
     new Date(
       CONFIG.fim
     );
-
 
   const agora =
     new Date();
@@ -402,82 +492,50 @@ function atualizarPrazo() {
         );
 
 
-  const dataInicio =
-    $('#dataInicio');
+  if ($('#dataInicio')) {
 
-
-  const dataAtual =
-    $('#dataAtual');
-
-
-  const dataFim =
-    $('#dataFim');
-
-
-  const percentualPrazo =
-    $('#percentualPrazo');
-
-
-  const barraPrazo =
-    $('#barraPrazo');
-
-
-  const diasDecorridosEl =
-    $('#diasDecorridos');
-
-
-  const diasRestantesEl =
-    $('#diasRestantes');
-
-
-  const statusPrazo =
-    $('#statusPrazo');
-
-
-  if (dataInicio) {
-
-    dataInicio.textContent =
+    $('#dataInicio').textContent =
       formatarData(inicio);
 
   }
 
 
-  if (dataAtual) {
+  if ($('#dataAtual')) {
 
-    dataAtual.textContent =
+    $('#dataAtual').textContent =
       formatarData(agora);
 
   }
 
 
-  if (dataFim) {
+  if ($('#dataFim')) {
 
-    dataFim.textContent =
+    $('#dataFim').textContent =
       formatarData(fim);
 
   }
 
 
-  if (percentualPrazo) {
+  if ($('#percentualPrazo')) {
 
-    percentualPrazo.textContent =
+    $('#percentualPrazo').textContent =
       percentual.toFixed(1) +
       '%';
 
   }
 
 
-  if (barraPrazo) {
+  if ($('#barraPrazo')) {
 
-    barraPrazo.style.width =
+    $('#barraPrazo').style.width =
       percentual + '%';
 
   }
 
 
-  if (diasDecorridosEl) {
+  if ($('#diasDecorridos')) {
 
-    diasDecorridosEl.textContent =
+    $('#diasDecorridos').textContent =
       diasDecorridos +
       (
         diasDecorridos === 1
@@ -488,9 +546,9 @@ function atualizarPrazo() {
   }
 
 
-  if (diasRestantesEl) {
+  if ($('#diasRestantes')) {
 
-    diasRestantesEl.textContent =
+    $('#diasRestantes').textContent =
       diasRestantes +
       (
         diasRestantes === 1
@@ -501,25 +559,25 @@ function atualizarPrazo() {
   }
 
 
-  if (statusPrazo) {
+  if ($('#statusPrazo')) {
 
     if (agora < inicio) {
 
-      statusPrazo.textContent =
+      $('#statusPrazo').textContent =
         'Ainda não iniciado';
 
     }
 
     else if (agora > fim) {
 
-      statusPrazo.textContent =
+      $('#statusPrazo').textContent =
         'Prazo encerrado';
 
     }
 
     else {
 
-      statusPrazo.textContent =
+      $('#statusPrazo').textContent =
         'Em andamento';
 
     }
@@ -530,7 +588,7 @@ function atualizarPrazo() {
 
 
 /* =========================================================
-   MOSTRAR PROGRESSO DOS TRABALHOS
+   PROGRESSO
 ========================================================= */
 
 function mostrarProgresso(valor) {
@@ -543,49 +601,34 @@ function mostrarProgresso(valor) {
     );
 
 
-  const range =
-    $('#progressoManual');
+  if ($('#progressoManual')) {
 
-
-  const numeroInput =
-    $('#progressoNumero');
-
-
-  const barra =
-    $('#barraTrabalho');
-
-
-  const badge =
-    $('#percentualTrabalhoBadge');
-
-
-  if (range) {
-
-    range.value =
+    $('#progressoManual').value =
       numero;
 
   }
 
 
-  if (numeroInput) {
+  if ($('#progressoNumero')) {
 
-    numeroInput.value =
+    $('#progressoNumero').value =
       numero;
 
   }
 
 
-  if (barra) {
+  if ($('#barraTrabalho')) {
 
-    barra.style.width =
+    $('#barraTrabalho').style.width =
       numero + '%';
 
   }
 
 
-  if (badge) {
+  if ($('#percentualTrabalhoBadge')) {
 
-    badge.textContent =
+    $('#percentualTrabalhoBadge')
+      .textContent =
       numero + '%';
 
   }
@@ -609,17 +652,12 @@ async function carregarProgresso() {
 
     if (snapshot.exists()) {
 
-      const dados =
-        snapshot.data();
-
-
       mostrarProgresso(
-        dados.percentual || 0
+        snapshot.data()
+          .percentual || 0
       );
 
-    }
-
-    else {
+    } else {
 
       mostrarProgresso(0);
 
@@ -645,6 +683,16 @@ async function salvarProgresso(
   valor
 ) {
 
+  if (!usuarioEhAdmin) {
+
+    alert(
+      'Somente o administrador pode alterar o progresso.'
+    );
+
+    return;
+  }
+
+
   const percentual =
     limitar(
       Number(valor) || 0,
@@ -664,8 +712,7 @@ async function salvarProgresso(
       progressoRef,
       {
 
-        percentual:
-          percentual,
+        percentual,
 
         atualizadoEm:
           serverTimestamp(),
@@ -704,6 +751,16 @@ async function salvarProgresso(
 
 function abrirFormularioAtividade() {
 
+  if (!usuarioEhAdmin) {
+
+    alert(
+      'Somente o administrador pode incluir atividades.'
+    );
+
+    return;
+  }
+
+
   if ($('#formNovaAtividade')) {
     return;
   }
@@ -724,7 +781,9 @@ function abrirFormularioAtividade() {
 
 
   const formulario =
-    document.createElement('div');
+    document.createElement(
+      'div'
+    );
 
 
   formulario.id =
@@ -747,7 +806,6 @@ function abrirFormularioAtividade() {
         id="cancelarNovaAtividade"
         type="button"
         class="btn-cancelar-atividade"
-        aria-label="Cancelar"
       >
         ×
       </button>
@@ -765,7 +823,6 @@ function abrirFormularioAtividade() {
         id="novaAtividadeTitulo"
         type="text"
         maxlength="200"
-        placeholder="Ex.: Solicitação de documentos"
       >
 
     </div>
@@ -791,9 +848,7 @@ function abrirFormularioAtividade() {
         Status
       </label>
 
-      <select
-        id="novaAtividadeStatus"
-      >
+      <select id="novaAtividadeStatus">
 
         <option value="Pendente">
           Pendente
@@ -822,7 +877,6 @@ function abrirFormularioAtividade() {
         id="novaAtividadeDescricao"
         rows="4"
         maxlength="2000"
-        placeholder="Descreva a atividade ou providência..."
       ></textarea>
 
     </div>
@@ -845,21 +899,8 @@ function abrirFormularioAtividade() {
   );
 
 
-  const cancelar =
-    $('#cancelarNovaAtividade');
-
-
-  const salvar =
-    $('#salvarNovaAtividade');
-
-
-  const titulo =
-    $('#novaAtividadeTitulo');
-
-
-  if (cancelar) {
-
-    cancelar.addEventListener(
+  $('#cancelarNovaAtividade')
+    .addEventListener(
       'click',
       function () {
 
@@ -868,77 +909,51 @@ function abrirFormularioAtividade() {
       }
     );
 
-  }
 
-
-  if (salvar) {
-
-    salvar.addEventListener(
+  $('#salvarNovaAtividade')
+    .addEventListener(
       'click',
       salvarNovaAtividade
     );
 
-  }
 
-
-  if (titulo) {
-
-    titulo.focus();
-
-  }
+  $('#novaAtividadeTitulo')
+    .focus();
 
 }
 
 
 /* =========================================================
-   SALVAR NOVA ATIVIDADE
+   SALVAR ATIVIDADE
 ========================================================= */
 
 async function salvarNovaAtividade() {
 
-  const tituloInput =
-    $('#novaAtividadeTitulo');
-
-
-  const dataInput =
-    $('#novaAtividadeData');
-
-
-  const statusInput =
-    $('#novaAtividadeStatus');
-
-
-  const descricaoInput =
-    $('#novaAtividadeDescricao');
-
-
-  if (
-    !tituloInput ||
-    !dataInput ||
-    !statusInput
-  ) {
-
+  if (!usuarioEhAdmin) {
     return;
-
   }
 
 
   const titulo =
-    tituloInput.value.trim();
+    $('#novaAtividadeTitulo')
+      .value
+      .trim();
 
 
   const data =
-    dataInput.value;
+    $('#novaAtividadeData')
+      .value;
 
 
   const status =
-    statusInput.value;
+    $('#novaAtividadeStatus')
+      .value;
 
 
   const descricao =
-    descricaoInput
-      ? descricaoInput.value.trim()
-      : '';
+    $('#novaAtividadeDescricao')
+      .value
+      .trim();
 
 
   if (!titulo) {
@@ -946,9 +961,6 @@ async function salvarNovaAtividade() {
     alert(
       'Informe a atividade.'
     );
-
-
-    tituloInput.focus();
 
     return;
 
@@ -961,24 +973,7 @@ async function salvarNovaAtividade() {
       'Informe a data.'
     );
 
-
-    dataInput.focus();
-
     return;
-
-  }
-
-
-  const botao =
-    $('#salvarNovaAtividade');
-
-
-  if (botao) {
-
-    botao.disabled = true;
-
-    botao.textContent =
-      'Salvando...';
 
   }
 
@@ -989,17 +984,13 @@ async function salvarNovaAtividade() {
       atividadesRef,
       {
 
-        titulo:
-          titulo,
+        titulo,
 
-        data:
-          data,
+        data,
 
-        status:
-          status,
+        status,
 
-        descricao:
-          descricao,
+        descricao,
 
         criadaEm:
           serverTimestamp(),
@@ -1016,15 +1007,9 @@ async function salvarNovaAtividade() {
     );
 
 
-    const formulario =
-      $('#formNovaAtividade');
+    $('#formNovaAtividade')
+      .remove();
 
-
-    if (formulario) {
-
-      formulario.remove();
-
-    }
 
   } catch (erro) {
 
@@ -1037,16 +1022,6 @@ async function salvarNovaAtividade() {
     alert(
       'Não foi possível salvar a atividade.'
     );
-
-
-    if (botao) {
-
-      botao.disabled = false;
-
-      botao.textContent =
-        'Salvar atividade';
-
-    }
 
   }
 
@@ -1062,6 +1037,16 @@ function abrirEdicao(
   atividade
 ) {
 
+  if (!usuarioEhAdmin) {
+
+    alert(
+      'Somente o administrador pode editar atividades.'
+    );
+
+    return;
+  }
+
+
   if ($('#formEditarAtividade')) {
     return;
   }
@@ -1072,9 +1057,7 @@ function abrirEdicao(
 
 
   if (formularioNova) {
-
     formularioNova.remove();
-
   }
 
 
@@ -1082,13 +1065,10 @@ function abrirEdicao(
     $('#listaAtividades');
 
 
-  if (!lista) {
-    return;
-  }
-
-
   const formulario =
-    document.createElement('div');
+    document.createElement(
+      'div'
+    );
 
 
   formulario.id =
@@ -1111,7 +1091,6 @@ function abrirEdicao(
         id="cancelarEdicaoAtividade"
         type="button"
         class="btn-cancelar-atividade"
-        aria-label="Cancelar"
       >
         ×
       </button>
@@ -1121,14 +1100,13 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label for="editarTitulo">
+      <label>
         Atividade
       </label>
 
       <input
         id="editarTitulo"
         type="text"
-        maxlength="200"
       >
 
     </div>
@@ -1136,7 +1114,7 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label for="editarData">
+      <label>
         Data
       </label>
 
@@ -1150,7 +1128,7 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label for="editarStatus">
+      <label>
         Status
       </label>
 
@@ -1177,14 +1155,13 @@ function abrirEdicao(
 
     <div class="campo-atividade">
 
-      <label for="editarDescricao">
+      <label>
         Observação
       </label>
 
       <textarea
         id="editarDescricao"
         rows="4"
-        maxlength="2000"
       ></textarea>
 
     </div>
@@ -1246,12 +1223,6 @@ function abrirEdicao(
       }
     );
 
-
-  formulario.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center'
-  });
-
 }
 
 
@@ -1262,6 +1233,11 @@ function abrirEdicao(
 async function salvarEdicaoAtividade(
   id
 ) {
+
+  if (!usuarioEhAdmin) {
+    return;
+  }
+
 
   const titulo =
     $('#editarTitulo')
@@ -1285,38 +1261,13 @@ async function salvarEdicaoAtividade(
       .trim();
 
 
-  if (!titulo) {
+  if (!titulo || !data) {
 
     alert(
-      'Informe a atividade.'
+      'Informe título e data.'
     );
 
     return;
-
-  }
-
-
-  if (!data) {
-
-    alert(
-      'Informe a data.'
-    );
-
-    return;
-
-  }
-
-
-  const botao =
-    $('#salvarEdicaoAtividade');
-
-
-  if (botao) {
-
-    botao.disabled = true;
-
-    botao.textContent =
-      'Salvando...';
 
   }
 
@@ -1331,17 +1282,13 @@ async function salvarEdicaoAtividade(
       ),
       {
 
-        titulo:
-          titulo,
+        titulo,
 
-        data:
-          data,
+        data,
 
-        status:
-          status,
+        status,
 
-        descricao:
-          descricao,
+        descricao,
 
         atualizadaEm:
           serverTimestamp(),
@@ -1355,15 +1302,9 @@ async function salvarEdicaoAtividade(
     );
 
 
-    const formulario =
-      $('#formEditarAtividade');
+    $('#formEditarAtividade')
+      .remove();
 
-
-    if (formulario) {
-
-      formulario.remove();
-
-    }
 
   } catch (erro) {
 
@@ -1377,28 +1318,26 @@ async function salvarEdicaoAtividade(
       'Não foi possível salvar a alteração.'
     );
 
-
-    if (botao) {
-
-      botao.disabled = false;
-
-      botao.textContent =
-        'Salvar alterações';
-
-    }
-
   }
 
 }
 
 
 /* =========================================================
-   EXCLUIR ATIVIDADE
+   EXCLUIR
 ========================================================= */
 
-async function excluirAtividade(
-  id
-) {
+async function excluirAtividade(id) {
+
+  if (!usuarioEhAdmin) {
+
+    alert(
+      'Somente o administrador pode excluir atividades.'
+    );
+
+    return;
+  }
+
 
   const confirmar =
     confirm(
@@ -1424,7 +1363,7 @@ async function excluirAtividade(
   } catch (erro) {
 
     console.error(
-      'Erro ao excluir atividade:',
+      'Erro ao excluir:',
       erro
     );
 
@@ -1439,7 +1378,7 @@ async function excluirAtividade(
 
 
 /* =========================================================
-   CRIAR CARD DE ATIVIDADE
+   CARD ATIVIDADE
 ========================================================= */
 
 function criarCardAtividade(
@@ -1511,8 +1450,7 @@ function criarCardAtividade(
 
   const classeStatus =
     (
-      atividade.status ||
-      ''
+      atividade.status || ''
     )
       .toLowerCase()
       .normalize('NFD')
@@ -1527,19 +1465,12 @@ function criarCardAtividade(
 
 
   status.classList.add(
-    'status-' +
-    classeStatus
+    'status-' + classeStatus
   );
 
 
-  meta.appendChild(
-    data
-  );
-
-
-  meta.appendChild(
-    status
-  );
+  meta.appendChild(data);
+  meta.appendChild(status);
 
 
   blocoDados.appendChild(
@@ -1552,103 +1483,112 @@ function criarCardAtividade(
   );
 
 
-  const acoes =
-    document.createElement(
-      'div'
-    );
-
-
-  acoes.className =
-    'atividade-acoes';
-
-
-  const editar =
-    document.createElement(
-      'button'
-    );
-
-
-  editar.type =
-    'button';
-
-
-  editar.className =
-    'botao-editar';
-
-
-  editar.title =
-    'Editar atividade';
-
-
-  editar.textContent =
-    '✏️';
-
-
-  const excluir =
-    document.createElement(
-      'button'
-    );
-
-
-  excluir.type =
-    'button';
-
-
-  excluir.className =
-    'botao-excluir';
-
-
-  excluir.title =
-    'Excluir atividade';
-
-
-  excluir.textContent =
-    '🗑️';
-
-
-  editar.addEventListener(
-    'click',
-    function () {
-
-      abrirEdicao(
-        id,
-        atividade
-      );
-
-    }
-  );
-
-
-  excluir.addEventListener(
-    'click',
-    function () {
-
-      excluirAtividade(
-        id
-      );
-
-    }
-  );
-
-
-  acoes.appendChild(
-    editar
-  );
-
-
-  acoes.appendChild(
-    excluir
-  );
-
-
   topo.appendChild(
     blocoDados
   );
 
 
-  topo.appendChild(
-    acoes
-  );
+  /*
+     AÇÕES APARECEM SOMENTE
+     PARA O ADMINISTRADOR
+  */
+
+  if (usuarioEhAdmin) {
+
+    const acoes =
+      document.createElement(
+        'div'
+      );
+
+
+    acoes.className =
+      'atividade-acoes';
+
+
+    const editar =
+      document.createElement(
+        'button'
+      );
+
+
+    editar.type =
+      'button';
+
+
+    editar.className =
+      'botao-editar';
+
+
+    editar.title =
+      'Editar atividade';
+
+
+    editar.textContent =
+      '✏️';
+
+
+    const excluir =
+      document.createElement(
+        'button'
+      );
+
+
+    excluir.type =
+      'button';
+
+
+    excluir.className =
+      'botao-excluir';
+
+
+    excluir.title =
+      'Excluir atividade';
+
+
+    excluir.textContent =
+      '🗑️';
+
+
+    editar.addEventListener(
+      'click',
+      function () {
+
+        abrirEdicao(
+          id,
+          atividade
+        );
+
+      }
+    );
+
+
+    excluir.addEventListener(
+      'click',
+      function () {
+
+        excluirAtividade(
+          id
+        );
+
+      }
+    );
+
+
+    acoes.appendChild(
+      editar
+    );
+
+
+    acoes.appendChild(
+      excluir
+    );
+
+
+    topo.appendChild(
+      acoes
+    );
+
+  }
 
 
   card.appendChild(
@@ -1679,7 +1619,7 @@ function criarCardAtividade(
 
 
 /* =========================================================
-   FIRESTORE EM TEMPO REAL
+   ATIVIDADES EM TEMPO REAL
 ========================================================= */
 
 function escutarAtividades() {
@@ -1713,25 +1653,18 @@ function escutarAtividades() {
 
       function (snapshot) {
 
-        lista.innerHTML = '';
+        lista.innerHTML =
+          '';
 
 
         snapshot.forEach(
           function (documento) {
 
-            const atividade =
-              documento.data();
-
-
-            const card =
+            lista.appendChild(
               criarCardAtividade(
                 documento.id,
-                atividade
-              );
-
-
-            lista.appendChild(
-              card
+                documento.data()
+              )
             );
 
           }
@@ -1754,11 +1687,6 @@ function escutarAtividades() {
           erro
         );
 
-
-        alert(
-          'Não foi possível carregar as atividades.'
-        );
-
       }
     );
 
@@ -1766,7 +1694,7 @@ function escutarAtividades() {
 
 
 /* =========================================================
-   EVENTOS DO PAINEL
+   EVENTOS
 ========================================================= */
 
 function configurarEventosPainel() {
@@ -1862,13 +1790,17 @@ async function iniciarPainel() {
   }
 
 
-  painelIniciado = true;
+  painelIniciado =
+    true;
 
 
   atualizarPrazo();
 
 
   await carregarProgresso();
+
+
+  aplicarPermissoesInterface();
 
 
   configurarEventosPainel();
@@ -1886,7 +1818,7 @@ async function iniciarPainel() {
 
 
 /* =========================================================
-   EVENTOS LOGIN E LOGOUT
+   LOGIN / LOGOUT
 ========================================================= */
 
 const botaoEntrar =
