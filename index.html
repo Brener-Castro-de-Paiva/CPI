@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Controle Cronológico - CPI de Roseira</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="container topo-conteudo">
+      <div>
+        <span class="selo">PÁGINA SIGILOSA</span>
+        <h1>Comissão Parlamentar de Inquérito</h1>
+        <p class="subtitulo">Controle cronológico dos trabalhos da CPI de Roseira</p>
+      </div>
+      <div class="icone-sigilo" aria-hidden="true">🔒</div>
+    </div>
+  </header>
+
+  <main class="container principal">
+    <section class="alerta-sigilo">
+      <strong>Atenção:</strong> os trabalhos, assim como esta página, são sigilosos e destinados exclusivamente ao controle interno da Comissão.
+    </section>
+
+    <section class="painel destaque">
+      <div class="painel-cabecalho">
+        <div>
+          <span class="rotulo">Controle de prazo</span>
+          <h2>Prazo total da CPI</h2>
+        </div>
+        <span id="statusPrazo" class="status">Em andamento</span>
+      </div>
+
+      <div class="datas-grid">
+        <div class="data-card">
+          <span>Início</span>
+          <strong id="dataInicio">20/08/2026</strong>
+        </div>
+        <div class="data-card">
+          <span>Data atual</span>
+          <strong id="dataAtual">--/--/----</strong>
+        </div>
+        <div class="data-card">
+          <span>Encerramento</span>
+          <strong id="dataFim">18/11/2026</strong>
+        </div>
+      </div>
+
+      <div class="progresso-grupo">
+        <div class="progresso-info">
+          <span>Decurso do prazo</span>
+          <strong id="percentualPrazo">0%</strong>
+        </div>
+        <div class="barra barra-principal" aria-label="Progresso do prazo da CPI">
+          <div id="barraPrazo" class="barra-preenchimento" style="width: 0%"></div>
+        </div>
+        <div class="progresso-detalhes">
+          <span id="diasDecorridos">0 dias decorridos</span>
+          <span id="diasRestantes">0 dias restantes</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-cabecalho">
+        <div>
+          <span class="rotulo">Execução dos trabalhos</span>
+          <h2>Cronograma de trabalho concluído</h2>
+        </div>
+        <span id="percentualTrabalhoBadge" class="status secundario">0%</span>
+      </div>
+
+      <div class="progresso-grupo">
+        <div class="barra barra-trabalho" aria-label="Progresso manual dos trabalhos">
+          <div id="barraTrabalho" class="barra-preenchimento trabalho" style="width: 0%"></div>
+        </div>
+
+        <div class="controle-manual">
+          <label for="progressoManual">Ajustar progresso dos trabalhos</label>
+          <div class="controle-linha">
+            <input id="progressoManual" type="range" min="0" max="100" step="1" value="0">
+            <input id="progressoNumero" type="number" min="0" max="100" step="1" value="0">
+            <span>%</span>
+          </div>
+          <p class="ajuda">O percentual é salvo automaticamente neste navegador.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-cabecalho">
+        <div>
+          <span class="rotulo">Atividades</span>
+          <h2>Controle cronológico</h2>
+        </div>
+        <button id="adicionarAtividade" class="botao" type="button">+ Nova atividade</button>
+      </div>
+
+      <div id="listaAtividades" class="atividades"></div>
+      <p id="semAtividades" class="vazio">Nenhuma atividade cadastrada.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-conteudo">
+      <p>Criado para controle cronológico. Os dias são contados automaticamente e as atividades são estabelecidas manualmente.</p>
+      <p>Todos os direitos reservados à Comissão Parlamentar de Inquérito de Roseira. Página sigilosa.</p>
+    </div>
+  </footer>
+
+  <template id="atividadeTemplate">
+    <article class="atividade-card">
+      <div class="atividade-topo">
+        <div>
+          <input class="atividade-titulo" type="text" value="Nova atividade" aria-label="Título da atividade">
+          <div class="atividade-meta">
+            <input class="atividade-data" type="date" aria-label="Data da atividade">
+            <select class="atividade-status" aria-label="Status da atividade">
+              <option value="Pendente">Pendente</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+        </div>
+        <button class="remover-atividade" type="button" aria-label="Remover atividade">×</button>
+      </div>
+      <textarea class="atividade-descricao" rows="3" placeholder="Descreva a atividade, providência, documento solicitado ou etapa da investigação..."></textarea>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
