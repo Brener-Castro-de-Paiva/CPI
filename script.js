@@ -8,13 +8,17 @@ import {
   initializeApp
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
 
+
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  inMemoryPersistence
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+
 
 import {
   getFirestore,
@@ -62,14 +66,75 @@ const EMAIL_ADMIN =
 const app =
   initializeApp(firebaseConfig);
 
+
 const auth =
   getAuth(app);
+
 
 const db =
   getFirestore(app);
 
+
 const googleProvider =
   new GoogleAuthProvider();
+
+
+/* =========================================================
+   CONFIGURAÇÃO DA AUTENTICAÇÃO
+========================================================= */
+
+/*
+  Idioma utilizado pelo Firebase.
+*/
+
+auth.languageCode =
+  'pt-BR';
+
+
+/*
+  A autenticação existe somente enquanto
+  esta página permanecer aberta.
+
+  Ao atualizar a página ou abrir novamente,
+  será necessário realizar novo login.
+*/
+
+try {
+
+  await setPersistence(
+    auth,
+    inMemoryPersistence
+  );
+
+
+  /*
+    Remove eventual autenticação anterior
+    que ainda tenha sido recuperada durante
+    a inicialização.
+  */
+
+  await signOut(auth);
+
+}
+
+catch (erro) {
+
+  console.error(
+    'Erro ao configurar a sessão:',
+    erro
+  );
+
+}
+
+
+/*
+  Ao clicar em "Entrar com Google",
+  o Google exibirá a escolha da conta.
+*/
+
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 
 /* =========================================================
@@ -120,14 +185,18 @@ const progressoRef =
 let painelIniciado =
   false;
 
+
 let usuarioEhAdmin =
   false;
+
 
 let unsubscribeAtividades =
   null;
 
+
 let intervaloPrazo =
   null;
+
 
 let acessoRegistradoNestaSessao =
   false;
@@ -175,7 +244,9 @@ function formatarData(data) {
 function formatarDataISO(dataISO) {
 
   if (!dataISO) {
+
     return '';
+
   }
 
 
@@ -202,7 +273,7 @@ function formatarDataISO(dataISO) {
 
 
 /* =========================================================
-   CRIAÇÃO SEGURA DE TEXTO
+   CRIAÇÃO SEGURA DE ELEMENTOS DE TEXTO
 ========================================================= */
 
 function criarElementoTexto(
@@ -233,7 +304,7 @@ function criarElementoTexto(
 
 
 /* =========================================================
-   VERIFICAÇÃO DO ADMINISTRADOR
+   VERIFICAR ADMINISTRADOR
 ========================================================= */
 
 function verificarAdministrador(
@@ -276,18 +347,21 @@ async function registrarAcesso(
 ) {
 
   if (!usuario) {
+
     return;
+
   }
 
 
   /*
-    Evita criar vários logs durante
-    a mesma sessão somente porque
-    onAuthStateChanged disparou novamente.
+    Registra apenas uma vez durante
+    a sessão atual da página.
   */
 
   if (acessoRegistradoNestaSessao) {
+
     return;
+
   }
 
 
@@ -322,13 +396,13 @@ async function registrarAcesso(
     acessoRegistradoNestaSessao =
       true;
 
+  }
 
-  } catch (erro) {
+  catch (erro) {
 
     /*
-      O erro de auditoria não deve
-      impedir o usuário de acessar
-      o painel.
+      Uma eventual falha no log
+      não impedirá o acesso ao painel.
     */
 
     console.error(
@@ -342,7 +416,7 @@ async function registrarAcesso(
 
 
 /* =========================================================
-   INTERFACE DE ACORDO COM A PERMISSÃO
+   PERMISSÕES DA INTERFACE
 ========================================================= */
 
 function aplicarPermissoesInterface() {
@@ -365,6 +439,11 @@ function aplicarPermissoesInterface() {
     );
 
 
+  /*
+    Somente administrador vê o botão
+    para adicionar nova atividade.
+  */
+
   if (adicionar) {
 
     adicionar.hidden =
@@ -372,6 +451,11 @@ function aplicarPermissoesInterface() {
 
   }
 
+
+  /*
+    Usuários comuns podem visualizar
+    o progresso, mas não alterá-lo.
+  */
 
   if (progressoManual) {
 
@@ -418,6 +502,17 @@ async function entrarComGoogle() {
 
   try {
 
+    /*
+      Mantém a autenticação apenas
+      enquanto esta página permanecer aberta.
+    */
+
+    await setPersistence(
+      auth,
+      inMemoryPersistence
+    );
+
+
     await signInWithPopup(
       auth,
       googleProvider
@@ -433,9 +528,21 @@ async function entrarComGoogle() {
     );
 
 
-    alert(
-      'Não foi possível entrar com a conta Google.'
-    );
+    /*
+      Não mostra mensagem se o próprio
+      usuário fechou a janela de login.
+    */
+
+    if (
+      erro.code !==
+      'auth/popup-closed-by-user'
+    ) {
+
+      alert(
+        'Não foi possível entrar com a conta Google.'
+      );
+
+    }
 
   }
 
@@ -451,6 +558,16 @@ async function sairDaConta() {
   try {
 
     await signOut(auth);
+
+
+    /*
+      Volta para o início da página.
+    */
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
 
   }
 
@@ -482,6 +599,12 @@ onAuthStateChanged(
       $('#conteudoProtegido');
 
 
+    /*
+      =======================================================
+      USUÁRIO AUTENTICADO
+      =======================================================
+    */
+
     if (usuario) {
 
       verificarAdministrador(
@@ -490,13 +613,19 @@ onAuthStateChanged(
 
 
       /*
-        Registra o acesso no Firestore.
+        Só registra o log depois
+        da autenticação efetiva.
       */
 
       await registrarAcesso(
         usuario
       );
 
+
+      /*
+        Esconde completamente
+        a tela de login.
+      */
 
       if (telaLogin) {
 
@@ -506,6 +635,10 @@ onAuthStateChanged(
       }
 
 
+      /*
+        Exibe o painel.
+      */
+
       if (conteudo) {
 
         conteudo.hidden =
@@ -514,12 +647,30 @@ onAuthStateChanged(
       }
 
 
+      /*
+        Garante que o usuário vá
+        para o início do painel.
+      */
+
+      window.scrollTo(
+        0,
+        0
+      );
+
+
       aplicarPermissoesInterface();
 
 
       await iniciarPainel();
 
     }
+
+
+    /*
+      =======================================================
+      USUÁRIO NÃO AUTENTICADO
+      =======================================================
+    */
 
     else {
 
@@ -531,6 +682,11 @@ onAuthStateChanged(
         false;
 
 
+      /*
+        O conteúdo protegido sempre
+        fica escondido sem autenticação.
+      */
+
       if (conteudo) {
 
         conteudo.hidden =
@@ -538,6 +694,10 @@ onAuthStateChanged(
 
       }
 
+
+      /*
+        Exibe somente a tela de login.
+      */
 
       if (telaLogin) {
 
@@ -547,13 +707,22 @@ onAuthStateChanged(
       }
 
 
+      /*
+        Volta a página para o topo.
+      */
+
+      window.scrollTo(
+        0,
+        0
+      );
+
+
       painelIniciado =
         false;
 
 
       /*
-        Para de escutar atividades
-        ao sair.
+        Para a escuta do Firestore.
       */
 
       if (unsubscribeAtividades) {
@@ -567,8 +736,7 @@ onAuthStateChanged(
 
 
       /*
-        Cancela atualização automática
-        do prazo.
+        Cancela o temporizador.
       */
 
       if (intervaloPrazo) {
@@ -576,6 +744,7 @@ onAuthStateChanged(
         clearInterval(
           intervaloPrazo
         );
+
 
         intervaloPrazo =
           null;
@@ -668,9 +837,41 @@ function atualizarPrazo() {
         );
 
 
-  if ($('#dataInicio')) {
+  const dataInicio =
+    $('#dataInicio');
 
-    $('#dataInicio').textContent =
+
+  const dataAtual =
+    $('#dataAtual');
+
+
+  const dataFim =
+    $('#dataFim');
+
+
+  const percentualPrazo =
+    $('#percentualPrazo');
+
+
+  const barraPrazo =
+    $('#barraPrazo');
+
+
+  const diasDecorridosEl =
+    $('#diasDecorridos');
+
+
+  const diasRestantesEl =
+    $('#diasRestantes');
+
+
+  const statusPrazo =
+    $('#statusPrazo');
+
+
+  if (dataInicio) {
+
+    dataInicio.textContent =
       formatarData(
         inicio
       );
@@ -678,9 +879,9 @@ function atualizarPrazo() {
   }
 
 
-  if ($('#dataAtual')) {
+  if (dataAtual) {
 
-    $('#dataAtual').textContent =
+    dataAtual.textContent =
       formatarData(
         agora
       );
@@ -688,9 +889,9 @@ function atualizarPrazo() {
   }
 
 
-  if ($('#dataFim')) {
+  if (dataFim) {
 
-    $('#dataFim').textContent =
+    dataFim.textContent =
       formatarData(
         fim
       );
@@ -698,29 +899,27 @@ function atualizarPrazo() {
   }
 
 
-  if ($('#percentualPrazo')) {
+  if (percentualPrazo) {
 
-    $('#percentualPrazo')
-      .textContent =
+    percentualPrazo.textContent =
       percentual.toFixed(1) +
       '%';
 
   }
 
 
-  if ($('#barraPrazo')) {
+  if (barraPrazo) {
 
-    $('#barraPrazo')
-      .style.width =
-      percentual + '%';
+    barraPrazo.style.width =
+      percentual +
+      '%';
 
   }
 
 
-  if ($('#diasDecorridos')) {
+  if (diasDecorridosEl) {
 
-    $('#diasDecorridos')
-      .textContent =
+    diasDecorridosEl.textContent =
       diasDecorridos +
       (
         diasDecorridos === 1
@@ -731,10 +930,9 @@ function atualizarPrazo() {
   }
 
 
-  if ($('#diasRestantes')) {
+  if (diasRestantesEl) {
 
-    $('#diasRestantes')
-      .textContent =
+    diasRestantesEl.textContent =
       diasRestantes +
       (
         diasRestantes === 1
@@ -745,28 +943,25 @@ function atualizarPrazo() {
   }
 
 
-  if ($('#statusPrazo')) {
+  if (statusPrazo) {
 
     if (agora < inicio) {
 
-      $('#statusPrazo')
-        .textContent =
+      statusPrazo.textContent =
         'Ainda não iniciado';
 
     }
 
     else if (agora > fim) {
 
-      $('#statusPrazo')
-        .textContent =
+      statusPrazo.textContent =
         'Prazo encerrado';
 
     }
 
     else {
 
-      $('#statusPrazo')
-        .textContent =
+      statusPrazo.textContent =
         'Em andamento';
 
     }
@@ -777,7 +972,7 @@ function atualizarPrazo() {
 
 
 /* =========================================================
-   EXIBIR PROGRESSO
+   EXIBIR PROGRESSO DOS TRABALHOS
 ========================================================= */
 
 function mostrarProgresso(
@@ -792,38 +987,52 @@ function mostrarProgresso(
     );
 
 
-  if ($('#progressoManual')) {
+  const range =
+    $('#progressoManual');
 
-    $('#progressoManual')
-      .value =
+
+  const numeroInput =
+    $('#progressoNumero');
+
+
+  const barra =
+    $('#barraTrabalho');
+
+
+  const badge =
+    $('#percentualTrabalhoBadge');
+
+
+  if (range) {
+
+    range.value =
       numero;
 
   }
 
 
-  if ($('#progressoNumero')) {
+  if (numeroInput) {
 
-    $('#progressoNumero')
-      .value =
+    numeroInput.value =
       numero;
 
   }
 
 
-  if ($('#barraTrabalho')) {
+  if (barra) {
 
-    $('#barraTrabalho')
-      .style.width =
-      numero + '%';
+    barra.style.width =
+      numero +
+      '%';
 
   }
 
 
-  if ($('#percentualTrabalhoBadge')) {
+  if (badge) {
 
-    $('#percentualTrabalhoBadge')
-      .textContent =
-      numero + '%';
+    badge.textContent =
+      numero +
+      '%';
 
   }
 
@@ -831,7 +1040,7 @@ function mostrarProgresso(
 
 
 /* =========================================================
-   CARREGAR PROGRESSO DO FIRESTORE
+   CARREGAR PROGRESSO FIRESTORE
 ========================================================= */
 
 async function carregarProgresso() {
@@ -853,7 +1062,8 @@ async function carregarProgresso() {
 
 
       mostrarProgresso(
-        dados.percentual || 0
+        dados.percentual ||
+        0
       );
 
     }
@@ -955,7 +1165,7 @@ async function salvarProgresso(
 
 
 /* =========================================================
-   ABRIR NOVA ATIVIDADE
+   ABRIR FORMULÁRIO DE NOVA ATIVIDADE
 ========================================================= */
 
 function abrirFormularioAtividade() {
@@ -970,6 +1180,10 @@ function abrirFormularioAtividade() {
 
   }
 
+
+  /*
+    Impede dois formulários simultâneos.
+  */
 
   if (
     $('#formNovaAtividade')
@@ -1212,7 +1426,9 @@ async function salvarNovaAtividade() {
 
 
   const titulo =
-    tituloInput.value.trim();
+    tituloInput
+      .value
+      .trim();
 
 
   const data =
@@ -1225,7 +1441,9 @@ async function salvarNovaAtividade() {
 
   const descricao =
     descricaoInput
-      ? descricaoInput.value.trim()
+      ? descricaoInput
+          .value
+          .trim()
       : '';
 
 
@@ -1348,7 +1566,7 @@ async function salvarNovaAtividade() {
 
 
 /* =========================================================
-   ABRIR EDIÇÃO
+   ABRIR EDIÇÃO DE ATIVIDADE
 ========================================================= */
 
 function abrirEdicao(
@@ -1426,6 +1644,7 @@ function abrirEdicao(
         id="cancelarEdicaoAtividade"
         type="button"
         class="btn-cancelar-atividade"
+        aria-label="Cancelar"
       >
         ×
       </button>
@@ -1522,19 +1741,23 @@ function abrirEdicao(
 
 
   $('#editarTitulo').value =
-    atividade.titulo || '';
+    atividade.titulo ||
+    '';
 
 
   $('#editarData').value =
-    atividade.data || '';
+    atividade.data ||
+    '';
 
 
   $('#editarStatus').value =
-    atividade.status || 'Pendente';
+    atividade.status ||
+    'Pendente';
 
 
   $('#editarDescricao').value =
-    atividade.descricao || '';
+    atividade.descricao ||
+    '';
 
 
   $('#cancelarEdicaoAtividade')
@@ -1615,7 +1838,9 @@ async function salvarEdicaoAtividade(
 
 
   const titulo =
-    tituloInput.value.trim();
+    tituloInput
+      .value
+      .trim();
 
 
   const data =
@@ -1628,7 +1853,9 @@ async function salvarEdicaoAtividade(
 
   const descricao =
     descricaoInput
-      ? descricaoInput.value.trim()
+      ? descricaoInput
+          .value
+          .trim()
       : '';
 
 
@@ -1807,7 +2034,7 @@ async function excluirAtividade(
 
 
 /* =========================================================
-   CRIAR CARD DE ATIVIDADE
+   CRIAR CARD DA ATIVIDADE
 ========================================================= */
 
 function criarCardAtividade(
@@ -1927,10 +2154,9 @@ function criarCardAtividade(
   );
 
 
-  /*
-    Somente o administrador
-    recebe botões de edição.
-  */
+  /* =======================================================
+     BOTÕES APENAS PARA ADMINISTRADOR
+  ======================================================= */
 
   if (usuarioEhAdmin) {
 
@@ -2107,10 +2333,14 @@ function escutarAtividades() {
             documento
           ) {
 
+            const atividade =
+              documento.data();
+
+
             const card =
               criarCardAtividade(
                 documento.id,
-                documento.data()
+                atividade
               );
 
 
@@ -2281,7 +2511,7 @@ async function iniciarPainel() {
 
 
 /* =========================================================
-   LOGIN E LOGOUT
+   BOTÕES DE LOGIN E LOGOUT
 ========================================================= */
 
 const botaoEntrar =
