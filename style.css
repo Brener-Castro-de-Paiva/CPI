@@ -957,6 +957,7 @@ footer {
 }
 
 @media (max-width: 760px) {
+
   .topo-conteudo {
     min-height: 190px;
   }
@@ -985,6 +986,8 @@ footer {
     grid-template-columns: 1fr 75px 16px;
   }
 }
+
+
 /* =========================================================
    ELEMENTOS OCULTOS PELO JAVASCRIPT
 ========================================================= */
