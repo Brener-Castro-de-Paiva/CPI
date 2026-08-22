@@ -985,3 +985,10 @@ footer {
     grid-template-columns: 1fr 75px 16px;
   }
 }
+/* =========================================================
+   ELEMENTOS OCULTOS PELO JAVASCRIPT
+========================================================= */
+
+[hidden] {
+  display: none !important;
+}
