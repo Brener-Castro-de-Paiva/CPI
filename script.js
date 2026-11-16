@@ -1,141 +1,16 @@
 'use strict';
 
 /* =========================================================
-   FIREBASE SDK
+   FIREBASE COMPARTILHADO
+   Login, logout e logs são gerenciados por auth.js.
 ========================================================= */
-
+import './auth.js';
+import { auth, db, EMAIL_ADMIN } from './firebase-config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
 import {
-  initializeApp
-} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
-
-
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  inMemoryPersistence
-} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
-
-
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-  setDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp
+  collection, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc,
+  query, orderBy, onSnapshot, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
-
-
-/* =========================================================
-   CONFIGURAÇÃO FIREBASE
-========================================================= */
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDDNJK6lQdCwwfkAlNTXjZZSGCWY1yyYF8",
-  authDomain: "ceip-31aae.firebaseapp.com",
-  projectId: "ceip-31aae",
-  storageBucket: "ceip-31aae.firebasestorage.app",
-  messagingSenderId: "398480411066",
-  appId: "1:398480411066:web:9ef349268e6524e8fa3583",
-  measurementId: "G-470PQTD7V7"
-};
-
-
-/* =========================================================
-   ADMINISTRADOR
-========================================================= */
-
-const EMAIL_ADMIN =
-  'breneradvocacia@gmail.com';
-
-
-/* =========================================================
-   INICIALIZAÇÃO FIREBASE
-========================================================= */
-
-const app =
-  initializeApp(firebaseConfig);
-
-
-const auth =
-  getAuth(app);
-
-
-const db =
-  getFirestore(app);
-
-
-const googleProvider =
-  new GoogleAuthProvider();
-
-
-/* =========================================================
-   CONFIGURAÇÃO DA AUTENTICAÇÃO
-========================================================= */
-
-/*
-  Idioma utilizado pelo Firebase.
-*/
-
-auth.languageCode =
-  'pt-BR';
-
-
-/*
-  A autenticação existe somente enquanto
-  esta página permanecer aberta.
-
-  Ao atualizar a página ou abrir novamente,
-  será necessário realizar novo login.
-*/
-
-try {
-
-  await setPersistence(
-    auth,
-    inMemoryPersistence
-  );
-
-
-  /*
-    Remove eventual autenticação anterior
-    que ainda tenha sido recuperada durante
-    a inicialização.
-  */
-
-  await signOut(auth);
-
-}
-
-catch (erro) {
-
-  console.error(
-    'Erro ao configurar a sessão:',
-    erro
-  );
-
-}
-
-
-/*
-  Ao clicar em "Entrar com Google",
-  o Google exibirá a escolha da conta.
-*/
-
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
-
 
 /* =========================================================
    CONFIGURAÇÃO DA CPI
@@ -163,11 +38,7 @@ const atividadesRef =
   );
 
 
-const logsAcessoRef =
-  collection(
-    db,
-    'logsAcesso'
-  );
+
 
 
 const progressoRef =
@@ -198,8 +69,7 @@ let intervaloPrazo =
   null;
 
 
-let acessoRegistradoNestaSessao =
-  false;
+
 
 
 /* =========================================================
@@ -338,81 +208,6 @@ function verificarAdministrador(
 }
 
 
-/* =========================================================
-   REGISTRAR LOG DE ACESSO
-========================================================= */
-
-async function registrarAcesso(
-  usuario
-) {
-
-  if (!usuario) {
-
-    return;
-
-  }
-
-
-  /*
-    Registra apenas uma vez durante
-    a sessão atual da página.
-  */
-
-  if (acessoRegistradoNestaSessao) {
-
-    return;
-
-  }
-
-
-  try {
-
-    await addDoc(
-      logsAcessoRef,
-      {
-
-        tipo:
-          'entrada',
-
-        uid:
-          usuario.uid || '',
-
-        nome:
-          usuario.displayName || '',
-
-        email:
-          usuario.email || '',
-
-        dataHora:
-          serverTimestamp(),
-
-        pagina:
-          'Controle cronológico da CPI'
-
-      }
-    );
-
-
-    acessoRegistradoNestaSessao =
-      true;
-
-  }
-
-  catch (erro) {
-
-    /*
-      Uma eventual falha no log
-      não impedirá o acesso ao painel.
-    */
-
-    console.error(
-      'Erro ao registrar acesso:',
-      erro
-    );
-
-  }
-
-}
 
 
 /* =========================================================
@@ -494,268 +289,32 @@ function aplicarPermissoesInterface() {
 }
 
 
-/* =========================================================
-   LOGIN COM GOOGLE
-========================================================= */
-
-async function entrarComGoogle() {
-
-  try {
-
-    /*
-      Mantém a autenticação apenas
-      enquanto esta página permanecer aberta.
-    */
-
-    await setPersistence(
-      auth,
-      inMemoryPersistence
-    );
-
-
-    await signInWithPopup(
-      auth,
-      googleProvider
-    );
-
-  }
-
-  catch (erro) {
-
-    console.error(
-      'Erro no login:',
-      erro
-    );
-
-
-    /*
-      Não mostra mensagem se o próprio
-      usuário fechou a janela de login.
-    */
-
-    if (
-      erro.code !==
-      'auth/popup-closed-by-user'
-    ) {
-
-      alert(
-        'Não foi possível entrar com a conta Google.'
-      );
-
-    }
-
-  }
-
-}
 
 
 /* =========================================================
-   LOGOUT
+   SESSÃO DO PAINEL
 ========================================================= */
-
-async function sairDaConta() {
-
-  try {
-
-    await signOut(auth);
-
-
-    /*
-      Volta para o início da página.
-    */
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-
-  }
-
-  catch (erro) {
-
-    console.error(
-      'Erro ao sair:',
-      erro
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   CONTROLE DE AUTENTICAÇÃO
-========================================================= */
-
-onAuthStateChanged(
-  auth,
-  async function (usuario) {
-
-    const telaLogin =
-      $('#telaLogin');
-
-
-    const conteudo =
-      $('#conteudoProtegido');
-
-
-    /*
-      =======================================================
-      USUÁRIO AUTENTICADO
-      =======================================================
-    */
-
-    if (usuario) {
-
-      verificarAdministrador(
-        usuario
-      );
-
-
-      /*
-        Só registra o log depois
-        da autenticação efetiva.
-      */
-
-      await registrarAcesso(
-        usuario
-      );
-
-
-      /*
-        Esconde completamente
-        a tela de login.
-      */
-
-      if (telaLogin) {
-
-        telaLogin.hidden =
-          true;
-
-      }
-
-
-      /*
-        Exibe o painel.
-      */
-
-      if (conteudo) {
-
-        conteudo.hidden =
-          false;
-
-      }
-
-
-      /*
-        Garante que o usuário vá
-        para o início do painel.
-      */
-
-      window.scrollTo(
-        0,
-        0
-      );
-
-
-      aplicarPermissoesInterface();
-
-
-      await iniciarPainel();
-
+onAuthStateChanged(auth, (usuario) => {
+  const conteudo = $('#conteudoProtegido');
+  if (!usuario) {
+    usuarioEhAdmin = false;
+    if (conteudo) conteudo.hidden = true;
+    painelIniciado = false;
+    if (unsubscribeAtividades) {
+      unsubscribeAtividades();
+      unsubscribeAtividades = null;
     }
-
-
-    /*
-      =======================================================
-      USUÁRIO NÃO AUTENTICADO
-      =======================================================
-    */
-
-    else {
-
-      usuarioEhAdmin =
-        false;
-
-
-      acessoRegistradoNestaSessao =
-        false;
-
-
-      /*
-        O conteúdo protegido sempre
-        fica escondido sem autenticação.
-      */
-
-      if (conteudo) {
-
-        conteudo.hidden =
-          true;
-
-      }
-
-
-      /*
-        Exibe somente a tela de login.
-      */
-
-      if (telaLogin) {
-
-        telaLogin.hidden =
-          false;
-
-      }
-
-
-      /*
-        Volta a página para o topo.
-      */
-
-      window.scrollTo(
-        0,
-        0
-      );
-
-
-      painelIniciado =
-        false;
-
-
-      /*
-        Para a escuta do Firestore.
-      */
-
-      if (unsubscribeAtividades) {
-
-        unsubscribeAtividades();
-
-        unsubscribeAtividades =
-          null;
-
-      }
-
-
-      /*
-        Cancela o temporizador.
-      */
-
-      if (intervaloPrazo) {
-
-        clearInterval(
-          intervaloPrazo
-        );
-
-
-        intervaloPrazo =
-          null;
-
-      }
-
+    if (intervaloPrazo) {
+      clearInterval(intervaloPrazo);
+      intervaloPrazo = null;
     }
-
+    return;
   }
-);
-
+  verificarAdministrador(usuario);
+  if (conteudo) conteudo.hidden = false;
+  aplicarPermissoesInterface();
+  iniciarPainel().catch(erro => console.error('Erro ao iniciar painel:', erro));
+});
 
 /* =========================================================
    PRAZO TOTAL DA CPI
@@ -2467,6 +2026,37 @@ function configurarEventosPainel() {
 }
 
 
+
+/* =========================================================
+   PRORROGAÇÃO — REQUERIMENTO 063/2026
+========================================================= */
+function atualizarProrrogacao() {
+  const inicio = new Date(2026, 10, 19);
+  const fim = new Date(2027, 1, 16, 23, 59, 59);
+  const agora = new Date();
+  const total = fim.getTime() - inicio.getTime();
+  const decorrido = limitar(agora.getTime() - inicio.getTime(), 0, total);
+  const percentual = total ? 100 * decorrido / total : 0;
+  const umDia = 86400000;
+  const diasDecorridos = agora < inicio ? 0 : Math.floor(decorrido / umDia);
+  const diasRestantes = agora > fim ? 0 : Math.max(0, Math.ceil((fim - agora) / umDia));
+  const valores = {
+    dataInicioProrrogacao: formatarData(inicio),
+    dataAtualProrrogacao: formatarData(agora),
+    dataFimProrrogacao: formatarData(fim),
+    percentualProrrogacao: percentual.toFixed(1) + '%',
+    diasDecorridosProrrogacao: diasDecorridos + ' dias decorridos',
+    diasRestantesProrrogacao: diasRestantes + ' dias restantes',
+    statusProrrogacao: agora < inicio ? 'Aguardando início' : agora > fim ? 'Prazo encerrado' : 'Em andamento'
+  };
+  for (const [id, valor] of Object.entries(valores)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+  }
+  const barra = document.getElementById('barraProrrogacao');
+  if (barra) barra.style.width = percentual + '%';
+}
+
 /* =========================================================
    INICIAR PAINEL
 ========================================================= */
@@ -2485,7 +2075,7 @@ async function iniciarPainel() {
 
 
   atualizarPrazo();
-
+  atualizarProrrogacao();
 
   await carregarProgresso();
 
@@ -2501,7 +2091,7 @@ async function iniciarPainel() {
 
   intervaloPrazo =
     setInterval(
-      atualizarPrazo,
+      () => { atualizarPrazo(); atualizarProrrogacao(); },
       60 *
       60 *
       1000
@@ -2510,33 +2100,3 @@ async function iniciarPainel() {
 }
 
 
-/* =========================================================
-   BOTÕES DE LOGIN E LOGOUT
-========================================================= */
-
-const botaoEntrar =
-  $('#entrarGoogle');
-
-
-const botaoSair =
-  $('#sairConta');
-
-
-if (botaoEntrar) {
-
-  botaoEntrar.addEventListener(
-    'click',
-    entrarComGoogle
-  );
-
-}
-
-
-if (botaoSair) {
-
-  botaoSair.addEventListener(
-    'click',
-    sairDaConta
-  );
-
-}
