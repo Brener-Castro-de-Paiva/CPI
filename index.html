@@ -1,7 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
+
+  <!-- =====================================================
+       1. CONFIGURAÇÕES GERAIS
+  ====================================================== -->
+
   <meta charset="UTF-8">
 
   <meta
@@ -14,46 +20,91 @@
     content="noindex, nofollow"
   >
 
-  <title>Controle Cronológico - CPI de Roseira</title>
+  <title>
+    Acesso Restrito | CPI de Roseira
+  </title>
+
+
+  <!-- =====================================================
+       2. ESTILO DA TELA DE LOGIN
+  ====================================================== -->
 
   <link
     rel="stylesheet"
-    href="style.css"
+    href="login.css"
   >
+
 </head>
 
 
 <body>
 
   <!-- =====================================================
-       TELA DE LOGIN
+       3. TELA DE AUTENTICAÇÃO
+
+       Esta página será responsável exclusivamente
+       pelo login com uma conta Google.
+
+       Após a autenticação, o auth.js realizará
+       o redirecionamento para painel.html.
   ====================================================== -->
 
-  <section id="telaLogin" class="tela-login">
+  <main
+    id="telaLogin"
+    class="tela-login"
+  >
 
-    <div class="login-card">
+    <section class="login-card">
 
-      <div class="login-icone">
+      <!-- ÍCONE DE SEGURANÇA -->
+
+      <div
+        class="login-icone"
+        aria-hidden="true"
+      >
         🔐
       </div>
 
+
+      <!-- IDENTIFICAÇÃO DO ACESSO -->
+
       <span class="selo">
-        ACESSO RESTRITO <br>
-        sob pena de responsabilidade
+        ACESSO RESTRITO
+        <span class="selo-complemento">
+          sob pena de responsabilidade
+        </span>
       </span>
+
+
+      <!-- TÍTULO -->
 
       <h1>
         Comissão Parlamentar de Inquérito
       </h1>
 
+
+      <!-- DESCRIÇÃO -->
+
       <p>
         Controle cronológico dos trabalhos da CPI de Roseira.
       </p>
 
-      <p>
-        Para acessar o painel, é necessário autenticar-se
-        com uma conta Google.
+      <p class="informacao-prorrogacao">
+        <strong>CPI PRORROGADA</strong><br>
+        Prazo prorrogado por mais 90 dias,
+        conforme Requerimento nº 063/2026.
       </p>
+
+    
+      <!-- ORIENTAÇÃO DE ACESSO -->
+
+      <p class="login-orientacao">
+        Para acessar o painel, é necessário
+        autenticar-se com uma conta Google.
+      </p>
+
+
+      <!-- BOTÃO DE AUTENTICAÇÃO -->
 
       <button
         id="entrarGoogle"
@@ -63,398 +114,33 @@
         Entrar com Google
       </button>
 
-    </div>
 
-  </section>
+      <!-- INFORMAÇÃO COMPLEMENTAR -->
+
+      <p class="login-aviso">
+        O acesso é registrado para fins
+        de controle interno.
+      </p>
+
+    </section>
+
+  </main>
 
 
   <!-- =====================================================
-       CONTEÚDO PROTEGIDO
-  ====================================================== -->
+       4. AUTENTICAÇÃO FIREBASE
 
-  <div id="conteudoProtegido" hidden>
+       O auth.js importa automaticamente
+       os serviços do firebase-config.js.
 
-
-    <!-- ===================================================
-         CABEÇALHO
-    ==================================================== -->
-
-    <header class="topo">
-
-      <div class="container topo-conteudo">
-
-        <div>
-
-          <span class="selo">
-            PÁGINA SIGILOSA
-          </span>
-
-          <h1>
-            Comissão Parlamentar de Inquérito
-          </h1>
-
-          <p class="subtitulo">
-            Controle cronológico dos trabalhos da CPI de Roseira
-          </p>
-
-        </div>
-
-
-        <div class="topo-acoes">
-
-          <div
-            class="icone-sigilo"
-            aria-hidden="true"
-          >
-            🔒
-          </div>
-
-          <button
-            id="sairConta"
-            class="botao-sair"
-            type="button"
-          >
-            Sair
-          </button>
-
-        </div>
-
-      </div>
-
-    </header>
-
-
-    <!-- ===================================================
-         CONTEÚDO PRINCIPAL
-    ==================================================== -->
-
-    <main class="container principal">
-
-
-      <!-- =================================================
-           AVISO
-      ================================================== -->
-
-      <section class="alerta-sigilo">
-
-        <strong>Atenção:</strong>
-
-        os trabalhos, assim como esta página, são sigilosos
-        e destinados exclusivamente ao controle interno
-        da Comissão.
-
-      </section>
-
-
-      <!-- =================================================
-           PRAZO TOTAL
-      ================================================== -->
-
-      <section class="painel destaque">
-
-        <div class="painel-cabecalho">
-
-          <div>
-
-            <span class="rotulo">
-              Controle de prazo
-            </span>
-
-            <h2>
-              Prazo total da CPI
-            </h2>
-
-          </div>
-
-
-          <span
-            id="statusPrazo"
-            class="status"
-          >
-            Em andamento
-          </span>
-
-        </div>
-
-
-        <div class="datas-grid">
-
-          <div class="data-card">
-
-            <span>
-              Início
-            </span>
-
-            <strong id="dataInicio">
-              20/08/2026
-            </strong>
-
-          </div>
-
-
-          <div class="data-card">
-
-            <span>
-              Data atual
-            </span>
-
-            <strong id="dataAtual">
-              --/--/----
-            </strong>
-
-          </div>
-
-
-          <div class="data-card">
-
-            <span>
-              Encerramento
-            </span>
-
-            <strong id="dataFim">
-              18/11/2026
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        <div class="progresso-grupo">
-
-          <div class="progresso-info">
-
-            <span>
-              Decurso do prazo
-            </span>
-
-            <strong id="percentualPrazo">
-              0%
-            </strong>
-
-          </div>
-
-
-          <div
-            class="barra barra-principal"
-            aria-label="Progresso do prazo da CPI"
-          >
-
-            <div
-              id="barraPrazo"
-              class="barra-preenchimento"
-              style="width: 0%"
-            >
-            </div>
-
-          </div>
-
-
-          <div class="progresso-detalhes">
-
-            <span id="diasDecorridos">
-              0 dias decorridos
-            </span>
-
-            <span id="diasRestantes">
-              0 dias restantes
-            </span>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           PROGRESSO MANUAL
-      ================================================== -->
-
-      <section class="painel">
-
-        <div class="painel-cabecalho">
-
-          <div>
-
-            <span class="rotulo">
-              Execução dos trabalhos
-            </span>
-
-            <h2>
-              Cronograma de trabalho concluído
-            </h2>
-
-          </div>
-
-
-          <span
-            id="percentualTrabalhoBadge"
-            class="status secundario"
-          >
-            0%
-          </span>
-
-        </div>
-
-
-        <div class="progresso-grupo">
-
-          <div
-            class="barra barra-trabalho"
-            aria-label="Progresso manual dos trabalhos"
-          >
-
-            <div
-              id="barraTrabalho"
-              class="barra-preenchimento trabalho"
-              style="width: 0%"
-            >
-            </div>
-
-          </div>
-
-
-          <div class="controle-manual">
-
-            <label for="progressoManual">
-              Ajustar progresso dos trabalhos
-            </label>
-
-
-            <div class="controle-linha">
-
-              <input
-                id="progressoManual"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value="0"
-              >
-
-
-              <input
-                id="progressoNumero"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value="0"
-              >
-
-
-              <span>
-                %
-              </span>
-
-            </div>
-
-
-            <p class="ajuda">
-              O percentual é salvo no Firebase e sincronizado
-              entre os dispositivos.
-            </p>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           ATIVIDADES
-      ================================================== -->
-
-      <section class="painel">
-
-        <div class="painel-cabecalho">
-
-          <div>
-
-            <span class="rotulo">
-              Atividades
-            </span>
-
-            <h2>
-              Controle cronológico
-            </h2>
-
-          </div>
-
-
-          <button
-            id="adicionarAtividade"
-            class="botao"
-            type="button"
-          >
-            + Nova atividade
-          </button>
-
-        </div>
-
-
-        <!--
-          Os formulários de inclusão e edição
-          são criados automaticamente pelo JavaScript.
-        -->
-
-
-        <div
-          id="listaAtividades"
-          class="atividades"
-        >
-        </div>
-
-
-        <p
-          id="semAtividades"
-          class="vazio"
-        >
-          Nenhuma atividade cadastrada.
-        </p>
-
-      </section>
-
-    </main>
-
-
-    <!-- ===================================================
-         RODAPÉ
-    ==================================================== -->
-
-    <footer>
-
-      <div class="container footer-conteudo">
-
-        <p>
-          Criado para controle cronológico.
-          Os dias são contados automaticamente
-          e as atividades são estabelecidas manualmente.
-        </p>
-
-        <p>
-          Todos os direitos reservados à Comissão Parlamentar
-          de Inquérito de Roseira. Página sigilosa.
-        </p>
-
-      </div>
-
-    </footer>
-
-  </div>
-
-
-  <!-- =====================================================
-       JAVASCRIPT
+       Não é necessário carregar
+       firebase-config.js separadamente.
   ====================================================== -->
 
   <script
     type="module"
-    src="script.js"
-  >
-  </script>
+    src="auth.js"
+  ></script>
 
 </body>
 

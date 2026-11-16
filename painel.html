@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  >
+
+  <title>
+    Controle Cronológico - CPI de Roseira
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+</head>
+
+<body>
+
+  <!-- =====================================================
+       CONTEÚDO PROTEGIDO
+       A visibilidade será controlada pela autenticação.
+  ====================================================== -->
+
+  <div id="conteudoProtegido" hidden>
+
+    <!-- ===================================================
+         CABEÇALHO
+    ==================================================== -->
+
+    <header class="topo">
+
+      <div class="container topo-conteudo">
+
+        <div>
+
+          <span class="selo">
+            PÁGINA SIGILOSA
+          </span>
+
+          <h1>
+            Comissão Parlamentar de Inquérito
+          </h1>
+
+          <p class="subtitulo">
+            Controle cronológico dos trabalhos da CPI de Roseira
+          </p>
+
+        </div>
+
+        <div class="topo-acoes">
+
+          <div
+            class="icone-sigilo"
+            aria-hidden="true"
+          >
+            🔒
+          </div>
+
+          <button
+            id="sairConta"
+            class="botao-sair"
+            type="button"
+          >
+            Sair
+          </button>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         CONTEÚDO PRINCIPAL
+    ==================================================== -->
+
+    <main class="container principal">
+
+      <!-- =================================================
+           AVISO DE SIGILO
+      ================================================== -->
+
+      <section class="alerta-sigilo">
+
+        <strong>Atenção:</strong>
+
+        os trabalhos, assim como esta página, são sigilosos
+        e destinados exclusivamente ao controle interno
+        da Comissão.
+
+      </section>
+
+
+      <!-- =================================================
+           PRAZO ORIGINAL DA CPI
+           Início: 20/08/2026
+           Encerramento: 18/11/2026
+
+           IMPORTANTE:
+           Os IDs abaixo são utilizados pelo script.js.
+      ================================================== -->
+
+      <section class="painel destaque">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Primeiro período — 90 dias
+            </span>
+
+            <h2>
+              Prazo original da CPI
+            </h2>
+
+          </div>
+
+          <span
+            id="statusPrazo"
+            class="status"
+          >
+            Em andamento
+          </span>
+
+        </div>
+
+
+        <!-- DATAS DO PRAZO ORIGINAL -->
+
+        <div class="datas-grid">
+
+          <div class="data-card">
+
+            <span>Início</span>
+
+            <strong id="dataInicio">
+              20/08/2026
+            </strong>
+
+          </div>
+
+          <div class="data-card">
+
+            <span>Data atual</span>
+
+            <strong id="dataAtual">
+              --/--/----
+            </strong>
+
+          </div>
+
+          <div class="data-card">
+
+            <span>Encerramento</span>
+
+            <strong id="dataFim">
+              18/11/2026
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- BARRA DO PRAZO ORIGINAL -->
+
+        <div class="progresso-grupo">
+
+          <div class="progresso-info">
+
+            <span>
+              Decurso do prazo original
+            </span>
+
+            <strong id="percentualPrazo">
+              0%
+            </strong>
+
+          </div>
+
+          <div
+            class="barra barra-principal"
+            aria-label="Progresso do prazo original da CPI"
+          >
+
+            <div
+              id="barraPrazo"
+              class="barra-preenchimento"
+              style="width: 0%"
+            ></div>
+
+          </div>
+
+          <div class="progresso-detalhes">
+
+            <span id="diasDecorridos">
+              0 dias decorridos
+            </span>
+
+            <span id="diasRestantes">
+              0 dias restantes
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           PRORROGAÇÃO DA CPI — 90 DIAS
+
+           Fundamento: Requerimento nº 063/2026
+           Aprovação: 09/11/2026
+           33ª Sessão Ordinária
+
+           Datas projetadas:
+           Início: 19/11/2026
+           Encerramento: 16/02/2027
+
+           A contagem automática será implementada
+           na próxima atualização do script.js.
+      ================================================== -->
+
+      <section class="painel destaque">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Segundo período — prorrogação
+            </span>
+
+            <h2>
+              Prazo prorrogado da CPI
+            </h2>
+
+          </div>
+
+          <span
+            id="statusProrrogacao"
+            class="status secundario"
+          >
+            Aguardando início
+          </span>
+
+        </div>
+
+
+        <!-- DATAS DA PRORROGAÇÃO -->
+
+        <div class="datas-grid">
+
+          <div class="data-card">
+
+            <span>Início</span>
+
+            <strong id="dataInicioProrrogacao">
+              19/11/2026
+            </strong>
+
+          </div>
+
+          <div class="data-card">
+
+            <span>Data atual</span>
+
+            <strong id="dataAtualProrrogacao">
+              --/--/----
+            </strong>
+
+          </div>
+
+          <div class="data-card">
+
+            <span>Encerramento previsto</span>
+
+            <strong id="dataFimProrrogacao">
+              16/02/2027
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- BARRA DO PRAZO PRORROGADO -->
+
+        <div class="progresso-grupo">
+
+          <div class="progresso-info">
+
+            <span>
+              Decurso do prazo prorrogado
+            </span>
+
+            <strong id="percentualProrrogacao">
+              0%
+            </strong>
+
+          </div>
+
+          <div
+            class="barra barra-principal"
+            aria-label="Progresso do prazo prorrogado da CPI"
+          >
+
+            <div
+              id="barraProrrogacao"
+              class="barra-preenchimento"
+              style="width: 0%"
+            ></div>
+
+          </div>
+
+          <div class="progresso-detalhes">
+
+            <span id="diasDecorridosProrrogacao">
+              0 dias decorridos
+            </span>
+
+            <span id="diasRestantesProrrogacao">
+              90 dias restantes
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- FUNDAMENTO DA PRORROGAÇÃO -->
+
+        <p class="ajuda">
+
+          <strong>
+            Requerimento nº 063/2026:
+          </strong>
+
+          prorrogação por 90 dias do prazo de funcionamento
+          e de apresentação do Relatório Final da CPI nº 01/2026,
+          instituída pelo Decreto Legislativo nº 010/2026.
+
+          Aprovado em 09/11/2026, na 33ª Sessão Ordinária,
+          por unanimidade dos presentes.
+
+        </p>
+
+      </section>
+
+
+      <!-- =================================================
+           PROGRESSO MANUAL DOS TRABALHOS
+
+           Este indicador é independente dos prazos.
+           Seu valor continua salvo no Firebase.
+
+           Somente o administrador poderá alterá-lo.
+      ================================================== -->
+
+      <section class="painel">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Execução dos trabalhos
+            </span>
+
+            <h2>
+              Cronograma de trabalho concluído
+            </h2>
+
+          </div>
+
+          <span
+            id="percentualTrabalhoBadge"
+            class="status secundario"
+          >
+            0%
+          </span>
+
+        </div>
+
+
+        <!-- BARRA DE PROGRESSO MANUAL -->
+
+        <div class="progresso-grupo">
+
+          <div
+            class="barra barra-trabalho"
+            aria-label="Progresso manual dos trabalhos"
+          >
+
+            <div
+              id="barraTrabalho"
+              class="barra-preenchimento trabalho"
+              style="width: 0%"
+            ></div>
+
+          </div>
+
+
+          <!-- CONTROLES DO ADMINISTRADOR -->
+
+          <div class="controle-manual">
+
+            <label for="progressoManual">
+              Ajustar progresso dos trabalhos
+            </label>
+
+            <div class="controle-linha">
+
+              <input
+                id="progressoManual"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+                disabled
+              >
+
+              <input
+                id="progressoNumero"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+                disabled
+              >
+
+              <span>%</span>
+
+            </div>
+
+            <p class="ajuda">
+              O percentual é salvo no Firebase e sincronizado
+              entre os dispositivos.
+              Somente o administrador pode alterá-lo.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTROLE CRONOLÓGICO DAS ATIVIDADES
+
+           O JavaScript cria automaticamente:
+           - Formulário de inclusão;
+           - Formulário de edição;
+           - Botões de exclusão;
+           - Lista ordenada por data.
+
+           Os registros existentes no Firebase
+           serão preservados.
+      ================================================== -->
+
+      <section class="painel">
+
+        <div class="painel-cabecalho">
+
+          <div>
+
+            <span class="rotulo">
+              Atividades
+            </span>
+
+            <h2>
+              Controle cronológico
+            </h2>
+
+          </div>
+
+          <button
+            id="adicionarAtividade"
+            class="botao"
+            type="button"
+            hidden
+          >
+            + Nova atividade
+          </button>
+
+        </div>
+
+
+        <!-- LISTA PREENCHIDA PELO FIREBASE -->
+
+        <div
+          id="listaAtividades"
+          class="atividades"
+        ></div>
+
+
+        <!-- MENSAGEM QUANDO NÃO HÁ ATIVIDADES -->
+
+        <p
+          id="semAtividades"
+          class="vazio"
+        >
+          Nenhuma atividade cadastrada.
+        </p>
+
+      </section>
+
+    </main>
+
+
+    <!-- ===================================================
+         RODAPÉ
+    ==================================================== -->
+
+    <footer>
+
+      <div class="container footer-conteudo">
+
+        <p>
+          Controle cronológico da CPI nº 01/2026.
+          Os prazos são calculados automaticamente
+          e as atividades são registradas manualmente.
+        </p>
+
+        <p>
+          Acesso restrito aos usuários autorizados.
+          Câmara Municipal de Roseira.
+        </p>
+
+      </div>
+
+    </footer>
+
+  </div>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+
+       Nesta etapa, mantemos o script.js original.
+
+       A integração com auth.js e firebase-config.js
+       será realizada na próxima etapa.
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="script.js"
+  ></script>
+
+</body>
+</html>
